@@ -6,10 +6,10 @@ Last verified: **2026-08-12**
 
 | Surface | Verified version or scope | Evidence | Supported claim |
 |---|---|---|---|
-| Desktop release | Harness Lens `v0.2.0`; Apple Silicon; minimum deployment-target metadata: macOS 11.0 | GitHub-hosted arm64 DMG and checksum, DMG integrity, strict code-signature check, bundle version and architecture inspection, plus packaged-app Memory load/edit/save smoke test | The published arm64 DMG, checksum, bundle metadata, and signature are internally consistent; runtime compatibility across macOS 11+ was not tested, and the documented Gatekeeper limitation applies |
+| Desktop release | Harness Lens `v0.3.0`; Apple Silicon; minimum deployment-target metadata: macOS 11.0 | Public GitHub arm64 DMG and checksum, SHA-256 and DMG integrity verification, strict code-signature check, bundle version and architecture inspection, installation, and background launch/quit smoke test | The published arm64 DMG, checksum, bundle metadata, and signature are internally consistent and the app launched on the sampled Apple Silicon host; runtime compatibility across macOS 11+ was not tested, and the documented Gatekeeper limitation applies |
 | Codex integration | `codex-cli 0.147.0-alpha.6.5` on macOS | Local Harness scan plus read-only App Server initialize and workspace thread list/read, bounded normalization, and an unchanged historical `updatedAt` after read | Current declarations and persisted thread metadata can be inspected without resuming or mutating the sampled run |
 | Claude Harness files | User and repository discovery only | Fixture-backed filesystem scanner tests | Supported files can be discovered as definitions; runtime precedence or usage is not proven |
-| Browser demo | Current GitHub Pages build with synthetic fixtures | Frontend tests, production build, Pages deployment and HTTP 200 check | The presentation layer can be explored without access to local files or a local Codex runtime |
+| Browser demo | Current GitHub Pages build with synthetic fixtures | Frontend tests, production build, Pages deployment, and versioned asset verification | The presentation layer can be explored without access to local files or a local Codex runtime |
 
 ## Version policy
 

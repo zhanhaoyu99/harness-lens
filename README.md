@@ -63,7 +63,7 @@ The run recorder normalizes allowlisted metadata. It does not display raw prompt
 The current distribution targets **Apple Silicon (macOS arm64, macOS 11+)**. Download the `.dmg` and its checksum from [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases), then verify it:
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.2.0_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.3.0_aarch64.dmg.sha256
 ```
 
 Current release artifacts are ad-hoc signed and **not notarized by Apple**. Gatekeeper may warn or block the app. Only open it through macOS Privacy & Security after verifying the checksum and deciding that you trust this project. Building from source is the safest option while notarization is pending.
