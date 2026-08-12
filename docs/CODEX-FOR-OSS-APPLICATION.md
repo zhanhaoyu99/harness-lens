@@ -18,7 +18,7 @@ This is a maintainer worksheet, not proof of acceptance or adoption. The [offici
 
 ## Why this project may qualify (form-ready, under 500 characters)
 
-> Harness Lens is a new MIT-licensed, local-first Agent DevTool that makes coding-agent configuration and runtime behavior inspectable. It separates what is defined, resolved, observed, and independently evaluated, and provides a read-only, metadata-only Codex run recorder. We are not claiming broad adoption yet; we are applying through the ecosystem-importance path because reproducible, privacy-conscious agent observability is missing infrastructure.
+> Harness Lens is a new MIT-licensed, local-first Agent DevTool for inspecting coding-agent configuration and runtime behavior. It distinguishes defined, resolved, observed, and evaluated evidence, clearly marking evaluation as not yet implemented, and offers a read-only, metadata-only Codex run recorder. We do not claim broad adoption; we apply through the ecosystem-importance path because the project addresses a gap in reproducible, privacy-conscious agent observability.
 
 ## How API credits would be used (form-ready, under 500 characters)
 
