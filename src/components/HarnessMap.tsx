@@ -163,10 +163,12 @@ export function HarnessMap({ snapshot, language, onFilter }: HarnessMapProps) {
 
     return { nodes: nextNodes, edges: nextEdges };
   }, [copy, snapshot]);
+  const nodeSetKey = nodes.map((node) => node.id).join("\u0000");
 
   return (
     <div className="map-shell" aria-label={copy.map.ariaLabel}>
       <ReactFlow
+        key={nodeSetKey}
         nodes={nodes}
         edges={edges}
         fitView

@@ -31,6 +31,12 @@ Known evidence gap: current runtime declarations and historical thread activity 
 - [x] Scan project and nested-project Harness sources along the active workspace ancestor chain.
 - [x] Present same-name cross-tool content differences as informational diagnostics rather than resolution states.
 
+## v0.3 — Provider lens and compact-window usability
+
+- [x] Filter the inventory directly by Codex, Claude, shared, or another discovered provider without changing evidence semantics.
+- [x] Keep provider, scope, type, search, List, Map, result counts, and warning navigation consistent.
+- [x] Keep every page and sidebar destination reachable at the minimum supported window size.
+
 ## M2 — Reproducible context snapshots
 
 - Persist immutable, content-addressed Harness snapshots locally.

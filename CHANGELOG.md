@@ -11,6 +11,22 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Trustworthy comparison of Harness revisions and failure modes.
 - Notarized and broader macOS distribution.
 
+## [0.3.0] - 2026-08-12
+
+### Added
+
+- A direct Harness-source lens for separating Codex, Claude, shared, and discovered future provider content, with counts that compose with scope, type, and search filters.
+- Result counts and visible active-filter state across List and Map exploration.
+
+### Changed
+
+- Kept Map and List modes truthful while filters are active, preserved existing source and scope filters when drilling into a content type, and routed diagnostics to a currently visible artifact when possible.
+- Made the explorer toolbar wrap cleanly in narrower supported windows.
+
+### Fixed
+
+- Restored full-page and sidebar scrolling when minimum-height content previously expanded the app grid beyond a non-maximized window.
+
 ## [0.2.0] - 2026-08-12
 
 ### Added
@@ -62,7 +78,8 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Completed runs and turns are not independently evaluated for correctness.
 - Redaction is best-effort and requires human review before sharing.
 
-[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.3.0
 [0.2.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.2.0
 [0.1.1]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1
 [0.1.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.0

@@ -4,6 +4,7 @@ import {
   counterpartDifferenceCount,
   effectiveCount,
   filterArtifacts,
+  providerFacetCounts,
 } from "./artifacts";
 import { sampleSnapshot } from "./sample";
 
@@ -17,6 +18,25 @@ describe("artifact helpers", () => {
     });
 
     expect(results.map((item) => item.id)).toEqual(["rule-repo"]);
+  });
+
+  it("counts provider facets after applying every non-provider filter", () => {
+    const counts = providerFacetCounts(sampleSnapshot.artifacts, {
+      provider: "codex",
+      kind: "agent",
+      scope: "repo",
+      search: "qa",
+    });
+
+    expect(counts).toEqual({
+      total: 2,
+      byProvider: {
+        codex: 1,
+        claude: 1,
+        shared: 0,
+        plugin: 0,
+      },
+    });
   });
 
   it("keeps evidence states separate", () => {

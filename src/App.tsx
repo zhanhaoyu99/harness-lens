@@ -28,6 +28,7 @@ import {
   counterpartDifferenceCount,
   effectiveCount,
   filterArtifacts,
+  providerFacetCounts,
 } from "./lib/artifacts";
 import {
   getInitialLanguage,
@@ -58,6 +59,7 @@ import type {
   ExplorerMode,
   HarnessArtifact,
   HarnessKind,
+  HarnessProvider,
   HarnessScope,
   HarnessSnapshot,
   MemorySaveError,
@@ -75,6 +77,14 @@ const navItems: Array<{
   { id: "compare", icon: GitCompareArrows, planned: true },
   { id: "share", icon: Share2 },
 ];
+
+const providerDisplayOrder: readonly HarnessProvider[] = ["codex", "claude", "shared", "plugin"];
+
+function filtersMatch(left: MapFilter, right: MapFilter): boolean {
+  return left.provider === right.provider
+    && left.kind === right.kind
+    && left.scope === right.scope;
+}
 
 function StageCard({
   label,
@@ -325,12 +335,60 @@ export default function App() {
   }
 
   function handleSelectArtifact(id: string) {
-    if (id !== selectedArtifactId) {
+    const target = snapshot?.artifacts.find((artifact) => artifact.id === id);
+    if (!target) return;
+
+    let nextFilter = mapFilter;
+    let nextSearch = search;
+    const targetIsVisible = filterArtifacts([target], { ...mapFilter, search }).length > 0;
+
+    if (!targetIsVisible) {
+      nextFilter = {
+        provider: mapFilter.provider && mapFilter.provider !== target.provider
+          ? target.provider
+          : mapFilter.provider,
+        kind: mapFilter.kind && mapFilter.kind !== target.kind
+          ? undefined
+          : mapFilter.kind,
+        scope: mapFilter.scope && mapFilter.scope !== target.scope
+          ? undefined
+          : mapFilter.scope,
+      };
+      if (!filterArtifacts([target], { ...nextFilter, search }).length) {
+        nextSearch = "";
+      }
+    }
+
+    const contextChanges = !filtersMatch(mapFilter, nextFilter) || search !== nextSearch;
+    if (id !== selectedArtifactId || contextChanges) {
       if (!confirmUnsavedMemoryLoss()) return;
       memoryMutationSequence.current += 1;
       clearLoadedMemory();
     }
+    if (contextChanges) {
+      setMapFilter(nextFilter);
+      setSearch(nextSearch);
+    }
     setSelectedArtifactId(id);
+  }
+
+  function applyArtifactFilter(nextFilter: MapFilter): boolean {
+    if (filtersMatch(mapFilter, nextFilter)) return true;
+    if (!confirmUnsavedMemoryLoss()) return false;
+    memoryMutationSequence.current += 1;
+    setMapFilter(nextFilter);
+    setSelectedArtifactId(null);
+    clearLoadedMemory();
+    return true;
+  }
+
+  function applySearch(nextSearch: string) {
+    if (search === nextSearch) return;
+    if (!confirmUnsavedMemoryLoss()) return;
+    memoryMutationSequence.current += 1;
+    setSearch(nextSearch);
+    setSelectedArtifactId(null);
+    clearLoadedMemory();
   }
 
   useEffect(() => {
@@ -368,6 +426,28 @@ export default function App() {
         ? filterArtifacts(snapshot.artifacts, { ...mapFilter, search })
         : [],
     [snapshot, mapFilter, search],
+  );
+
+  const providerFacets = useMemo(
+    () => providerFacetCounts(snapshot?.artifacts ?? [], { ...mapFilter, search }),
+    [snapshot, mapFilter, search],
+  );
+
+  const providerOptions = useMemo(
+    () => providerDisplayOrder.filter(
+      (provider) => snapshot?.artifacts.some((artifact) => artifact.provider === provider),
+    ),
+    [snapshot],
+  );
+
+  const filteredSnapshot = useMemo<HarnessSnapshot | null>(
+    () => snapshot ? { ...snapshot, artifacts: filteredArtifacts } : null,
+    [snapshot, filteredArtifacts],
+  );
+
+  const visibleArtifactIds = useMemo(
+    () => new Set(filteredArtifacts.map((artifact) => artifact.id)),
+    [filteredArtifacts],
   );
 
   const selectedArtifact = useMemo<HarnessArtifact | null>(
@@ -509,10 +589,17 @@ export default function App() {
   }
 
   const groupedArtifacts = selectedArtifact ? [] : filteredArtifacts;
+  const inventoryFilterActive = Boolean(
+    mapFilter.provider || mapFilter.kind || mapFilter.scope || search.trim(),
+  );
   const visibleWarnings = snapshot?.warnings.filter(
     (warning) => !(
       runtimeSnapshot?.state === "connected" &&
       (warning.id === "runtime-not-connected" || warning.id === "observed-not-connected")
+    ) && (
+      !inventoryFilterActive ||
+      warning.artifactIds.length === 0 ||
+      warning.artifactIds.some((artifactId) => visibleArtifactIds.has(artifactId))
     ),
   ) ?? [];
 
@@ -523,13 +610,9 @@ export default function App() {
   }
 
   function selectKind(kind: HarnessKind) {
-    if (!confirmUnsavedMemoryLoss()) return;
-    memoryMutationSequence.current += 1;
-    setSection("items");
-    setMode("list");
-    setMapFilter({ kind });
-    setSelectedArtifactId(null);
-    clearLoadedMemory();
+    if (applyArtifactFilter({ ...mapFilter, kind })) {
+      setSection("items");
+    }
   }
 
   const kinds = snapshot
@@ -581,7 +664,11 @@ export default function App() {
             {kinds.map((kind) => {
               const count = snapshot.artifacts.filter((artifact) => artifact.kind === kind).length;
               return (
-                <button key={kind} onClick={() => selectKind(kind)}>
+                <button
+                  key={kind}
+                  aria-label={`${copy.labels.kind[kind]} ${count}`}
+                  onClick={() => selectKind(kind)}
+                >
                   <span>{copy.labels.kind[kind]}</span><small>{count}</small>
                 </button>
               );
@@ -705,7 +792,9 @@ export default function App() {
                     const localizedWarning = localizeWarning(warning, language);
                     return (
                       <button key={warning.id} onClick={() => {
-                        const id = warning.artifactIds[0];
+                        const id = warning.artifactIds.find((artifactId) =>
+                          visibleArtifactIds.has(artifactId)
+                        ) ?? (inventoryFilterActive ? undefined : warning.artifactIds[0]);
                         if (id) handleSelectArtifact(id);
                       }}>
                         {warning.severity === "warning" ? <AlertTriangle size={16} /> : <Info size={16} />}
@@ -734,68 +823,91 @@ export default function App() {
                       <List size={15} /> {copy.explorer.list}
                     </button>
                   </div>
-                  <div className="toolbar-spacer" />
-                  <label className="scope-filter">
-                    <span>{copy.explorer.scopeFilter}</span>
-                    <select
-                      aria-label={copy.explorer.scopeFilter}
-                      value={mapFilter.scope ?? ""}
-                      onChange={(event) => {
-                        const scope = event.target.value as HarnessScope | "";
-                        if (!confirmUnsavedMemoryLoss()) return;
-                        memoryMutationSequence.current += 1;
-                        setMapFilter((current) => ({
-                          ...current,
-                          scope: scope || undefined,
-                        }));
-                        setSelectedArtifactId(null);
-                        clearLoadedMemory();
-                      }}
+                  <div className="provider-filter">
+                    <span className="provider-filter-label">{copy.explorer.providerFilter}</span>
+                    <div
+                      className="segmented-control"
+                      role="group"
+                      aria-label={copy.explorer.providerFilter}
                     >
-                      <option value="">{copy.explorer.allScopes}</option>
-                      {scopes.map((scope) => (
-                        <option key={scope} value={scope}>{copy.labels.scope[scope]}</option>
+                      <button
+                        className={clsx(!mapFilter.provider && "active")}
+                        aria-pressed={!mapFilter.provider}
+                        aria-label={`${copy.explorer.allProviders} ${providerFacets.total}`}
+                        onClick={() => applyArtifactFilter({
+                          ...mapFilter,
+                          provider: undefined,
+                        })}
+                      >
+                        {copy.explorer.allProviders}
+                        <small>{providerFacets.total}</small>
+                      </button>
+                      {providerOptions.map((provider) => (
+                        <button
+                          key={provider}
+                          className={clsx(mapFilter.provider === provider && "active")}
+                          aria-pressed={mapFilter.provider === provider}
+                          aria-label={`${copy.labels.provider[provider]} ${providerFacets.byProvider[provider]}`}
+                          onClick={() => applyArtifactFilter({ ...mapFilter, provider })}
+                        >
+                          {copy.labels.provider[provider]}
+                          <small>{providerFacets.byProvider[provider]}</small>
+                        </button>
                       ))}
-                    </select>
-                  </label>
-                  {(mapFilter.provider || mapFilter.kind || mapFilter.scope) ? (
-                    <button className="filter-chip" onClick={() => {
-                      if (!confirmUnsavedMemoryLoss()) return;
-                      memoryMutationSequence.current += 1;
-                      setMapFilter({});
-                      setSelectedArtifactId(null);
-                      clearLoadedMemory();
-                    }}>
-                      {mapFilter.provider ? copy.labels.provider[mapFilter.provider] : ""}
-                      {mapFilter.provider && (mapFilter.kind || mapFilter.scope) ? " · " : ""}
-                      {mapFilter.kind ? copy.labels.kind[mapFilter.kind] : ""}
-                      {mapFilter.kind && mapFilter.scope ? " · " : ""}
-                      {mapFilter.scope ? copy.labels.scope[mapFilter.scope] : ""}
-                      <span>×</span>
-                    </button>
-                  ) : null}
-                  <label className="search-field">
-                    <Search size={15} />
-                    <input
-                      value={search}
-                      aria-label={copy.explorer.search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={copy.explorer.search}
-                    />
-                  </label>
+                    </div>
+                  </div>
+                  <div className="toolbar-spacer" />
+                  <span className="filter-results" role="status">
+                    {copy.explorer.results(filteredArtifacts.length, snapshot.artifacts.length)}
+                  </span>
+                  <div className="filter-actions">
+                    <label className="scope-filter">
+                      <span>{copy.explorer.scopeFilter}</span>
+                      <select
+                        aria-label={copy.explorer.scopeFilter}
+                        value={mapFilter.scope ?? ""}
+                        onChange={(event) => {
+                          const scope = event.target.value as HarnessScope | "";
+                          applyArtifactFilter({
+                            ...mapFilter,
+                            scope: scope || undefined,
+                          });
+                        }}
+                      >
+                        <option value="">{copy.explorer.allScopes}</option>
+                        {scopes.map((scope) => (
+                          <option key={scope} value={scope}>{copy.labels.scope[scope]}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {(mapFilter.kind || mapFilter.scope) ? (
+                      <button
+                        className="filter-chip"
+                        onClick={() => applyArtifactFilter({ provider: mapFilter.provider })}
+                      >
+                        {mapFilter.kind ? copy.labels.kind[mapFilter.kind] : ""}
+                        {mapFilter.kind && mapFilter.scope ? " · " : ""}
+                        {mapFilter.scope ? copy.labels.scope[mapFilter.scope] : ""}
+                        <span>×</span>
+                      </button>
+                    ) : null}
+                    <label className="search-field">
+                      <Search size={15} />
+                      <input
+                        value={search}
+                        aria-label={copy.explorer.search}
+                        onChange={(event) => applySearch(event.target.value)}
+                        placeholder={copy.explorer.search}
+                      />
+                    </label>
+                  </div>
                 </div>
 
-                {mode === "map" && !search && !mapFilter.provider && !mapFilter.kind && !mapFilter.scope ? (
+                {mode === "map" ? (
                   <HarnessMap
-                    snapshot={snapshot}
+                    snapshot={filteredSnapshot ?? snapshot}
                     language={language}
-                    onFilter={(filter) => {
-                      if (!confirmUnsavedMemoryLoss()) return;
-                      memoryMutationSequence.current += 1;
-                      setMapFilter(filter);
-                      setSelectedArtifactId(null);
-                      clearLoadedMemory();
-                    }}
+                    onFilter={(filter) => applyArtifactFilter({ ...mapFilter, ...filter })}
                   />
                 ) : (
                   <HarnessTable
