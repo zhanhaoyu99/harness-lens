@@ -18,3 +18,4 @@
 - Kept source opening behind the current scan's canonical-path allowlist.
 - Published a reproducible, checksummed v0.1.0 release and synthetic-only Pages demo.
 - Added a metadata-only Codex Run Flight Recorder without exposing prompts, reasoning, tool arguments, or diffs.
+- Completed the first public maintenance loop in v0.1.1 and removed Node.js 20 workflow annotations.

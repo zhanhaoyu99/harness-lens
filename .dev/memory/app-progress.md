@@ -12,6 +12,7 @@ Current milestone: M2 - reproducible context snapshots
 - [x] Read-only Codex App Server adapter implemented
 - [x] Metadata-only run/turn/item normalization implemented
 - [x] Public MIT repository, green CI, and synthetic Pages demo launched
-- [x] Checksummed macOS arm64 v0.1.0 release published
+- [x] Checksummed macOS arm64 v0.1.1 release published
+- [x] First public issue-to-PR-to-release maintenance loop completed
 
 Next delivery: bind new runs to immutable Harness snapshots, then add verifier evidence and attributable comparison metrics.

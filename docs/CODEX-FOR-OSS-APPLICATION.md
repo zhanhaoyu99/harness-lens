@@ -10,8 +10,8 @@ This is a maintainer worksheet, not proof of acceptance or adoption. The officia
 - Role: Primary/core maintainer
 - Email: **TODO — maintainer must provide**
 - OpenAI organization ID: **TODO — maintainer must provide**
-- Public release: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.0
-- Current evidence: [repository](https://github.com/zhanhaoyu99/harness-lens), [CI](https://github.com/zhanhaoyu99/harness-lens/actions/workflows/ci.yml), [synthetic demo](https://zhanhaoyu99.github.io/harness-lens/), [v0.1.0 release](https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.0), and [public roadmap issues](https://github.com/zhanhaoyu99/harness-lens/issues?q=is%3Aissue%20state%3Aopen%20-label%3Adependencies). Add contributors, downloads, or dependent projects only as they exist.
+- Public release: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1
+- Current evidence: [repository](https://github.com/zhanhaoyu99/harness-lens), [CI](https://github.com/zhanhaoyu99/harness-lens/actions/workflows/ci.yml), [synthetic demo](https://zhanhaoyu99.github.io/harness-lens/), [v0.1.1 release](https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1), [first maintenance loop](https://github.com/zhanhaoyu99/harness-lens/issues/10), and [public roadmap issues](https://github.com/zhanhaoyu99/harness-lens/issues?q=is%3Aissue%20state%3Aopen%20-label%3Adependencies). Add contributors, downloads, or dependent projects only as they exist.
 
 ## Why this project may qualify (form-ready, under 500 characters)
 
@@ -27,8 +27,8 @@ This is a maintainer worksheet, not proof of acceptance or adoption. The officia
 - [x] Green CI on `main`.
 - [x] Public, checksummed macOS arm64 release with signing/notarization limitations disclosed.
 - [x] Security policy, threat model, contribution guide, roadmap, and maintainer runbook.
-- [ ] At least one real public issue-to-fix-to-release loop.
-- [ ] Evidence of active maintenance.
+- [x] Real public issue-to-fix-to-release loop: [#10](https://github.com/zhanhaoyu99/harness-lens/issues/10) → [#11](https://github.com/zhanhaoyu99/harness-lens/pull/11) → [v0.1.1](https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1).
+- [x] Public maintenance evidence through reviewed dependency PRs, green workflows, and two tested releases.
 - [x] Concise explanation of ecosystem importance without implying adoption; real usage signals remain future evidence.
 - [ ] Maintainer has reviewed the official terms and supplied email/org ID.
 
