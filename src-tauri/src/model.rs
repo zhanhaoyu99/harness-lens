@@ -39,7 +39,6 @@ pub enum ResolutionState {
     Defined,
     Shadowed,
     Duplicate,
-    Drifted,
     InstalledInactive,
     Unknown,
 }
@@ -65,6 +64,8 @@ pub struct HarnessArtifact {
     pub description: Option<String>,
     pub sensitive: bool,
     pub truncated: bool,
+    pub editable: bool,
+    pub editability_reason: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]

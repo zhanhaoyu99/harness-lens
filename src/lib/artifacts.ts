@@ -1,8 +1,16 @@
-import type { HarnessArtifact, HarnessKind, HarnessProvider } from "../types";
+import type {
+  HarnessArtifact,
+  HarnessKind,
+  HarnessProvider,
+  HarnessScope,
+  HarnessSnapshot,
+  HarnessWarning,
+} from "../types";
 
 export interface ArtifactFilter {
   provider?: HarnessProvider;
   kind?: HarnessKind;
+  scope?: HarnessScope;
   search?: string;
 }
 
@@ -14,6 +22,7 @@ export function filterArtifacts(
   return artifacts.filter((artifact) => {
     if (filter.provider && artifact.provider !== filter.provider) return false;
     if (filter.kind && artifact.kind !== filter.kind) return false;
+    if (filter.scope && artifact.scope !== filter.scope) return false;
     if (!query) return true;
     return [
       artifact.name,
@@ -29,8 +38,28 @@ export function effectiveCount(artifacts: HarnessArtifact[]): number {
   return artifacts.filter((artifact) => artifact.resolution === "effective").length;
 }
 
-export function driftCount(artifacts: HarnessArtifact[]): number {
-  return artifacts.filter((artifact) => artifact.counterpartId !== null).length;
+export function isCounterpartDifferenceWarning(warning: HarnessWarning): boolean {
+  return warning.id.startsWith("counterpart-difference:")
+    || warning.id.startsWith("cross-provider-difference:");
+}
+
+export function counterpartDifferenceCount(
+  snapshot: Pick<HarnessSnapshot, "artifacts" | "warnings">,
+  provider?: HarnessProvider,
+): number {
+  if (!provider) {
+    return snapshot.warnings.filter(isCounterpartDifferenceWarning).length;
+  }
+
+  const providerArtifactIds = new Set(
+    snapshot.artifacts
+      .filter((artifact) => artifact.provider === provider)
+      .map((artifact) => artifact.id),
+  );
+  return snapshot.warnings.filter(
+    (warning) => isCounterpartDifferenceWarning(warning)
+      && warning.artifactIds.some((artifactId) => providerArtifactIds.has(artifactId)),
+  ).length;
 }
 
 export interface ArtifactSummaryFallbacks {

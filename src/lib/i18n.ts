@@ -19,7 +19,7 @@ const en = {
     next: "Next",
     inventory: "Inventory",
     localOnly: "Local only",
-    readOnlyVersion: "v0.1 · read-only",
+    readOnlyVersion: "Local-first · guarded memory writes",
   },
   workspace: {
     label: "Workspace",
@@ -33,7 +33,7 @@ const en = {
     title: "See what you maintain in your Agent Harness.",
     body: "Choose a repository or worktree to discover Rules, Skills, Hooks, Agents, Config and Memory across user and project scopes.",
     choose: "Choose workspace",
-    privacy: "Read-only · local scanning · secrets redacted",
+    privacy: "Local scanning · explicit Memory saves · secrets redacted",
   },
   stages: {
     ariaLabel: "Harness evidence stages",
@@ -123,9 +123,11 @@ const en = {
     inventory: "Inventory",
     title: "What do I maintain in this Harness?",
     itemsTitle: "Every maintained Harness item",
-    summary: (items: number, providers: number, drift: number) =>
+    summary: (items: number, providers: number, differenceGroups: number) =>
       `${items} items across ${providers} providers. ${
-        drift ? `${drift} need attention.` : "No provider drift detected."
+        differenceGroups
+          ? `${differenceGroups} same-name difference group${differenceGroups === 1 ? "" : "s"}.`
+          : "No cross-tool same-name differences."
       }`,
     snapshot: "Snapshot",
   },
@@ -133,6 +135,8 @@ const en = {
     map: "Map",
     list: "List",
     search: "Search Harness",
+    scopeFilter: "Filter by scope",
+    allScopes: "All scopes",
   },
   table: {
     emptyTitle: "No Harness items match this view",
@@ -163,13 +167,37 @@ const en = {
     sensitive: "Sensitive",
     truncated: "… content truncated",
     metadataOnly: "Metadata only. Content was not loaded by default.",
+    memoryContent: "Memory content",
+    loadMemory: "View memory content",
+    loadAndEditMemory: "View and edit memory",
+    loadingMemory: "Loading memory…",
+    rawMemoryNotice: "Loaded only after this click. Raw content stays in this inspector and is never included in Share Snapshot.",
+    syntheticMemory: "The browser demo never reads or edits local Memory files. Open the desktop app to use this feature.",
+    memoryReadOnly: "This Memory file is view-only.",
+    memoryNoAutosave: "No autosave. Changes are written only when you choose Save.",
+    reloadMemory: "Reload from disk",
+    cancelMemory: "Discard changes",
+    saveMemory: "Save memory",
+    savingMemory: "Saving…",
+    memorySaved: "Saved and rescanned.",
+    memorySavedRefreshFailed: "Saved to disk, but the automatic rescan failed. Run Rescan to refresh the inventory.",
+    memoryCancelled: "Save cancelled. Your draft and edit authorization are still available.",
+    memoryReloadRequired: "This edit authorization can no longer be reused. Reload from disk before the next save.",
+    memoryChangesDiscarded: "Unsaved changes discarded.",
+    discardUnsavedMemoryConfirm: "Discard the unsaved Memory draft and continue?",
+    unsavedMemory: "Unsaved changes",
+    sameNameDifference: "Same-name content differs",
+    sameNameDifferenceTitle: "Cross-tool same-name difference",
+    sameNameDifferenceBody: "Another tool defines an item with the same kind and name in this exact user or project layer, but with different content. This is a comparison signal, not an error, and it does not change either item's effective state.",
+    counterpart: "Comparison item",
+    viewCounterpart: "View comparison item",
   },
   map: {
     ariaLabel: "Harness topology map",
     harnessItems: (count: number) => `${count} Harness items`,
     local: "local",
     discovered: (count: number) => `${count} discovered`,
-    drift: (count: number) => `${count} drift`,
+    drift: (count: number) => `${count} difference group${count === 1 ? "" : "s"}`,
     items: (count: number) => `${count} item${count === 1 ? "" : "s"}`,
     effective: (count: number) => `${count} effective`,
   },
@@ -195,7 +223,7 @@ const en = {
     body: "Review an aggregate-only card, then copy a Markdown summary for chat, email or documentation.",
     inventory: "Discovered",
     resolved: "Statically resolved",
-    drift: "Drifted items",
+    drift: "Same-name difference groups",
     duplicates: "Duplicate groups",
     unknown: "Unknown",
     byType: "By type",
@@ -223,17 +251,16 @@ const en = {
       plugin: "Plugin",
     },
     scope: {
-      user: "User",
-      repo: "Repo",
-      nested: "Nested",
-      worktree: "Worktree",
+      user: "User global",
+      repo: "Project",
+      nested: "Subproject",
+      worktree: "Project-bound",
     },
     resolution: {
       effective: "Effective",
       defined: "Defined",
       shadowed: "Shadowed",
       duplicate: "Duplicate",
-      drifted: "Drifted",
       installedInactive: "Inactive",
       unknown: "Unknown",
     },
@@ -243,8 +270,8 @@ const en = {
     runtimeDetail: "Defined and resolved states come from static adapter rules. Actual usage requires a runtime event source.",
     duplicateTitle: "Duplicate Harness content",
     duplicateDetail: "Multiple discovered items have identical content.",
-    driftTitle: (name?: string) => name ? `Provider drift: ${name}` : "Provider drift detected",
-    driftDetail: "Same-name Harness items differ across providers.",
+    driftTitle: (name?: string) => name ? `Same-name content differs: ${name}` : "Cross-tool same-name difference",
+    driftDetail: "Harness items in the same concrete user or project layer share a kind and name but have different content. This does not change their effective state.",
   },
 };
 
@@ -265,7 +292,7 @@ const zh: Messages = {
     next: "后续",
     inventory: "内容清单",
     localOnly: "仅在本机",
-    readOnlyVersion: "v0.1 · 只读",
+    readOnlyVersion: "本地优先 · 记忆受控写入",
   },
   workspace: {
     label: "工作区",
@@ -279,7 +306,7 @@ const zh: Messages = {
     title: "看清你在 Agent Harness 中维护的内容。",
     body: "选择一个仓库或工作树，发现用户级和项目级的规则、Skills、Hooks、Agents、配置与记忆。",
     choose: "选择工作区",
-    privacy: "只读 · 本地扫描 · 自动脱敏",
+    privacy: "本地扫描 · 记忆需明确保存 · 自动脱敏",
   },
   stages: {
     ariaLabel: "Harness 证据阶段",
@@ -369,9 +396,9 @@ const zh: Messages = {
     inventory: "内容清单",
     title: "这个 Harness 里维护了什么？",
     itemsTitle: "所有维护的 Harness 内容",
-    summary: (items: number, providers: number, drift: number) =>
+    summary: (items: number, providers: number, differenceGroups: number) =>
       `共发现 ${items} 项内容，来自 ${providers} 个提供方。${
-        drift ? `${drift} 项需要关注。` : "未发现提供方差异。"
+        differenceGroups ? `有 ${differenceGroups} 组跨工具同名内容差异。` : "未发现跨工具同名内容差异。"
       }`,
     snapshot: "快照",
   },
@@ -379,6 +406,8 @@ const zh: Messages = {
     map: "关系图",
     list: "列表",
     search: "搜索 Harness",
+    scopeFilter: "按范围筛选",
+    allScopes: "全部范围",
   },
   table: {
     emptyTitle: "没有符合当前条件的 Harness 内容",
@@ -409,13 +438,37 @@ const zh: Messages = {
     sensitive: "敏感内容",
     truncated: "… 内容已截断",
     metadataOnly: "当前仅展示元数据，默认未加载正文。",
+    memoryContent: "记忆正文",
+    loadMemory: "查看记忆正文",
+    loadAndEditMemory: "查看并编辑记忆",
+    loadingMemory: "正在加载记忆…",
+    rawMemoryNotice: "正文只在本次点击后加载；原始内容仅保留在检查器中，不会进入分享快照。",
+    syntheticMemory: "浏览器合成演示不会读取或编辑本地记忆文件；请在桌面应用中使用此功能。",
+    memoryReadOnly: "这个记忆文件仅支持查看。",
+    memoryNoAutosave: "不会自动保存；只有点击“保存记忆”才会写入文件。",
+    reloadMemory: "从磁盘重新加载",
+    cancelMemory: "放弃修改",
+    saveMemory: "保存记忆",
+    savingMemory: "正在保存…",
+    memorySaved: "已保存并重新扫描。",
+    memorySavedRefreshFailed: "内容已保存到磁盘，但自动重新扫描失败；请点击“重新扫描”刷新清单。",
+    memoryCancelled: "已取消保存，草稿和本次编辑授权仍保留，可再次保存。",
+    memoryReloadRequired: "本次编辑授权已失效，不能重复使用；再次保存前请从磁盘重新加载。",
+    memoryChangesDiscarded: "未保存的修改已放弃。",
+    discardUnsavedMemoryConfirm: "要放弃当前未保存的记忆草稿并继续吗？",
+    unsavedMemory: "有未保存修改",
+    sameNameDifference: "同名内容不同",
+    sameNameDifferenceTitle: "跨工具同名差异",
+    sameNameDifferenceBody: "另一个工具在同一个具体用户层或项目层中定义了同类型、同名但内容不同的条目。这只是对照信号，不代表配置错误，也不会改变任一条目的生效状态。",
+    counterpart: "对照条目",
+    viewCounterpart: "查看对照条目",
   },
   map: {
     ariaLabel: "Harness 关系图",
     harnessItems: (count: number) => `${count} 项 Harness 内容`,
     local: "本地",
     discovered: (count: number) => `发现 ${count} 项`,
-    drift: (count: number) => `${count} 项不一致`,
+    drift: (count: number) => `${count} 组同名差异`,
     items: (count: number) => `${count} 项内容`,
     effective: (count: number) => `${count} 项有效`,
   },
@@ -441,7 +494,7 @@ const zh: Messages = {
     body: "先检查只包含汇总信息的分享卡，再复制 Markdown 摘要到聊天、邮件或文档。",
     inventory: "已发现",
     resolved: "静态解析",
-    drift: "不一致条目",
+    drift: "同名内容差异组",
     duplicates: "重复分组",
     unknown: "未知状态",
     byType: "按类型",
@@ -469,17 +522,16 @@ const zh: Messages = {
       plugin: "插件",
     },
     scope: {
-      user: "用户级",
-      repo: "仓库级",
-      nested: "子目录",
-      worktree: "工作树",
+      user: "用户全局",
+      repo: "项目级",
+      nested: "子项目级",
+      worktree: "项目绑定",
     },
     resolution: {
       effective: "有效",
       defined: "已发现",
       shadowed: "被覆盖",
       duplicate: "重复",
-      drifted: "不一致",
       installedInactive: "未启用",
       unknown: "未知",
     },
@@ -489,8 +541,8 @@ const zh: Messages = {
     runtimeDetail: "已发现和已解析状态来自静态适配规则；实际使用情况需要运行时事件源。",
     duplicateTitle: "发现重复的 Harness 内容",
     duplicateDetail: "多个已发现条目具有完全相同的内容。",
-    driftTitle: (name?: string) => name ? `提供方内容不一致：${name}` : "检测到提供方内容不一致",
-    driftDetail: "不同提供方中存在同名但内容不同的 Harness 条目。",
+    driftTitle: (name?: string) => name ? `同名内容不同：${name}` : "跨工具同名差异",
+    driftDetail: "不同工具在同一个具体用户层或项目层中存在同类型、同名但内容不同的 Harness 条目；这不会改变条目的生效状态。",
   },
 };
 
@@ -538,10 +590,17 @@ export function localizeWarning(
   if (warning.id.startsWith("duplicate:")) {
     return { title: copy.duplicateTitle, detail: copy.duplicateDetail };
   }
-  if (warning.id.startsWith("drift:") || warning.id === "drift-agents") {
+  if (
+    warning.id.startsWith("drift:") ||
+    warning.id.startsWith("counterpart-difference:") ||
+    warning.id.startsWith("cross-provider-difference:") ||
+    warning.id === "drift-agents"
+  ) {
     const name = warning.title.startsWith("Provider drift:")
       ? warning.title.slice("Provider drift:".length).trim()
-      : undefined;
+      : warning.title.startsWith("Same-name content differs:")
+        ? warning.title.slice("Same-name content differs:".length).trim()
+        : undefined;
     return { title: copy.driftTitle(name), detail: copy.driftDetail };
   }
   return { title: warning.title, detail: warning.detail };

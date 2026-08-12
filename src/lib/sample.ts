@@ -26,6 +26,8 @@ function artifact(
     description: null,
     sensitive: false,
     truncated: false,
+    editable: false,
+    editabilityReason: null,
     ...partial,
   };
 }
@@ -129,6 +131,7 @@ export const sampleSnapshot: HarnessSnapshot = {
       resolutionReason: "Metadata only. Expand deliberately to read memory content.",
       sensitive: true,
       sizeBytes: 48000,
+      editabilityReason: "Synthetic demo does not access local files.",
     }),
     artifact({
       id: "workflow",
@@ -145,9 +148,9 @@ export const sampleSnapshot: HarnessSnapshot = {
   ],
   warnings: [
     {
-      id: "drift-agents",
-      severity: "warning",
-      title: "Provider drift detected",
+      id: "cross-provider-difference:repo:agent:qa",
+      severity: "info",
+      title: "Same-name content differs: qa",
       detail: "The Codex and Claude `qa` agents share a name but differ in content.",
       artifactIds: ["skill-qa-codex", "skill-qa-claude"],
     },

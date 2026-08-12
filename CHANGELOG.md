@@ -11,6 +11,26 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Trustworthy comparison of Harness revisions and failure modes.
 - Notarized and broader macOS distribution.
 
+## [0.2.0] - 2026-08-12
+
+### Added
+
+- On-demand Memory viewing and explicit editing for eligible existing Markdown files, with revision conflict detection and native confirmation.
+- Project and nested-project Harness discovery along the selected workspace chain.
+
+### Changed
+
+- Reframed provider comparison diagnostics as “same name, different content” instead of a resolution status, and stopped comparing entries across different scopes.
+
+### Security
+
+- Limited Memory writes to eligible, already-scanned Markdown files with revision-bound tokens, native confirmation, conflict detection, and atomic replacement.
+
+### Known limitations
+
+- Memory replacement preserves POSIX permissions but does not yet preserve macOS ACLs or extended attributes; hostile processes already running as the same user remain outside the isolation boundary.
+- Release artifact remains macOS arm64 only, ad-hoc signed, and not Apple-notarized.
+
 ## [0.1.1] - 2026-08-12
 
 ### Changed
@@ -42,6 +62,7 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Completed runs and turns are not independently evaluated for correctness.
 - Redaction is best-effort and requires human review before sharing.
 
-[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.2.0
 [0.1.1]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1
 [0.1.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.0

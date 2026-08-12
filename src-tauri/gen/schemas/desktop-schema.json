@@ -363,6 +363,12 @@
           "markdownDescription": "Enables the load_default_workspace command without any pre-configured scope."
         },
         {
+          "description": "Enables the load_memory_artifact command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-load-memory-artifact",
+          "markdownDescription": "Enables the load_memory_artifact command without any pre-configured scope."
+        },
+        {
           "description": "Enables the load_runtime_run command without any pre-configured scope.",
           "type": "string",
           "const": "allow-load-runtime-run",
@@ -379,6 +385,12 @@
           "type": "string",
           "const": "allow-rescan-workspace",
           "markdownDescription": "Enables the rescan_workspace command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_memory_artifact command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-memory-artifact",
+          "markdownDescription": "Enables the save_memory_artifact command without any pre-configured scope."
         },
         {
           "description": "Denies the choose_workspace command without any pre-configured scope.",
@@ -399,6 +411,12 @@
           "markdownDescription": "Denies the load_default_workspace command without any pre-configured scope."
         },
         {
+          "description": "Denies the load_memory_artifact command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-load-memory-artifact",
+          "markdownDescription": "Denies the load_memory_artifact command without any pre-configured scope."
+        },
+        {
           "description": "Denies the load_runtime_run command without any pre-configured scope.",
           "type": "string",
           "const": "deny-load-runtime-run",
@@ -417,10 +435,22 @@
           "markdownDescription": "Denies the rescan_workspace command without any pre-configured scope."
         },
         {
-          "description": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, and open sources from the current scan allowlist.",
+          "description": "Denies the save_memory_artifact command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-memory-artifact",
+          "markdownDescription": "Denies the save_memory_artifact command without any pre-configured scope."
+        },
+        {
+          "description": "Allows an explicit, confirmed save to an editable Markdown Memory artifact from the current scan allowlist.",
+          "type": "string",
+          "const": "harness-memory-edit",
+          "markdownDescription": "Allows an explicit, confirmed save to an editable Markdown Memory artifact from the current scan allowlist."
+        },
+        {
+          "description": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist.",
           "type": "string",
           "const": "harness-read",
-          "markdownDescription": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, and open sources from the current scan allowlist."
+          "markdownDescription": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

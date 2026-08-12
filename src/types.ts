@@ -18,7 +18,6 @@ export type ResolutionState =
   | "defined"
   | "shadowed"
   | "duplicate"
-  | "drifted"
   | "installedInactive"
   | "unknown";
 
@@ -41,6 +40,30 @@ export interface HarnessArtifact {
   description: string | null;
   sensitive: boolean;
   truncated: boolean;
+  editable: boolean;
+  editabilityReason: string | null;
+}
+
+export interface MemoryArtifactDocument {
+  artifactId: string;
+  editToken: string | null;
+  content: string;
+  contentHash: string;
+  sizeBytes: number;
+  editable: boolean;
+  editabilityReason: string | null;
+}
+
+export interface MemorySaveResult {
+  artifactId: string;
+  saved: boolean;
+  contentHash: string;
+  sizeBytes: number;
+}
+
+export interface MemorySaveError {
+  message: string;
+  tokenConsumed: boolean;
 }
 
 export interface HarnessWarning {

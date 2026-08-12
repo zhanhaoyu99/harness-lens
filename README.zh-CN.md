@@ -4,14 +4,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#安装)
 
-**一个本地优先、只读的 Agent Harness Control Plane / Agent DevTools。**
+**一个本地优先的 Agent Harness Control Plane / Agent DevTools。**
 
 Harness Lens 想先回答两个看似简单、实际很难的问题：
 
 1. 当前工作区会受到哪些 Rules、Skills、Hooks、Agents、配置与 Memory 影响？
 2. 一次真实的 Codex 任务实际走过了怎样的路径？
 
-它会扫描本机的 Codex 与 Claude Harness 来源，解释内容的来源和解析状态，并可连接实验性的 Codex App Server，把运行信息呈现成只包含元数据的「飞行记录」。它不会执行 Agent、修改 Harness，也不会把扫描内容上传到 Harness Lens 服务。
+它会扫描本机的 Codex 与 Claude Harness 来源，解释内容的来源和解析状态，并可连接实验性的 Codex App Server，把运行信息呈现成只包含元数据的「飞行记录」。它不会执行 Agent，也不会把扫描内容上传到 Harness Lens 服务。除用户明确确认编辑一个已识别的 Memory Markdown 文件外，Harness 来源保持只读。
 
 [English](README.md)
 
@@ -40,11 +40,13 @@ Harness Lens 会严格区分四类结论：
 
 ![按 Turn 线性回放的只读 Codex Run 飞行记录器](docs/assets/runs-zh.png)
 
-## v0.1 已实现
+## 当前已实现
 
 - 扫描用户选择的工作区，以及已知的用户级 Codex / Claude Harness 位置。
+- 区分用户全局、项目级、子项目级与项目绑定来源；选择仓库内子目录时，会沿仓库根目录到当前工作区的路径识别各层 Harness。
 - 通过 Map 或 List 浏览 Instructions、Rules、Skills、Hooks、Agents、Config、Memory 和 Workflows。
 - 查看作用域、Provider、来源、解析原因、重复组和经过脱敏的预览。
+- 仅在用户主动点击后加载 Memory 正文，并在显式确认、冲突检测的保护下编辑符合条件的项目级或用户维护 Memory Markdown 文件。
 - 连接实验性的 Codex App Server，读取当前 Skills / Hooks 与工作区最近的 Threads。
 - 将 Codex Thread 重放为只包含元数据的线性 Turn / Item 序列。
 - 复制只包含聚合统计的 Markdown 快照，不包含文件内容与绝对路径。
@@ -57,10 +59,10 @@ Run Recorder 只保留白名单中的元数据，不展示原始 Prompt、工具
 
 ### Release 版本
 
-首个版本仅支持 **Apple Silicon（macOS arm64，macOS 11+）**。从 [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases) 下载 `.dmg` 及校验文件，然后验证：
+当前分发版本仅支持 **Apple Silicon（macOS arm64，macOS 11+）**。从 [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases) 下载 `.dmg` 及校验文件，然后验证：
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.1.1_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.2.0_aarch64.dmg.sha256
 ```
 
 当前产物采用 ad-hoc 签名，**尚未经过 Apple Notarization**。Gatekeeper 可能弹出警告或阻止启动。请先核对校验值并确认信任本项目，再通过 macOS「隐私与安全性」手动打开。在完成公证前，从源码构建是更稳妥的方式。
@@ -111,17 +113,18 @@ pnpm tauri build
 ## 隐私与安全边界
 
 - **本地优先：**没有 Harness Lens 云端账号或遥测链路。
-- **只读：**不会修改 Harness 文件，也不会恢复、启动或删除 Codex Thread。
+- **默认只读：**Rules、Skills、Hooks、Agents、Config、Workflows 和 Codex Thread 都不会被修改；只有已扫描且符合条件的 Memory Markdown 可以在明确确认后保存。
+- **Memory 原文按需加载：**正文不会进入常规快照或 Share；只有用户主动查看时才进入编辑器，并可能包含未经脱敏的敏感内容。
 - **明确范围：**扫描从用户选择的工作区以及文档声明的用户级 Harness 位置开始。
 - **尽力脱敏：**常见密钥模式会在进入预览前被处理，但任何脱敏器都无法保证识别所有任意敏感文本。
-- **保守分享：**v0.1 的 Share 只输出聚合统计。
+- **保守分享：**当前版本的 Share 只输出聚合统计。
 - **实验性运行时：**Codex App Server 的兼容性可能变化；连接错误会明确显示，不会伪造证据。
 
 请把预览和截图都视为可能包含敏感信息，分享前务必人工检查。详见[隐私说明](docs/PRIVACY.md)、[威胁模型](docs/THREAT-MODEL.md)和[安全策略](SECURITY.md)。
 
 ## 项目状态
 
-Harness Lens 是一个早期、持续维护的开源项目。v0.1 已可用于本地 Harness 检查与 Codex Run 排查，但还不能把历史 Run 与不可变的 Harness 快照准确绑定，也不能提供可信的单次成本或判断任务是否成功。
+Harness Lens 是一个早期、持续维护的开源项目。当前版本已支持本地 Harness 检查、分层 Memory 管理与 Codex Run 排查，但还不能把历史 Run 与不可变的 Harness 快照准确绑定，也不能提供可信的单次成本或判断任务是否成功。
 
 Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详见 [Roadmap](docs/ROADMAP.md)、[产品方向](docs/PRODUCT.md)、[架构](docs/ARCHITECTURE.md)和[版本化兼容性证据](docs/COMPATIBILITY.md)。
 

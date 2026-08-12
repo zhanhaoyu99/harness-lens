@@ -56,7 +56,7 @@ export function ShareSnapshot({ snapshot, language }: ShareSnapshotProps) {
         <div className="share-metrics">
           <div><strong>{snapshot.artifacts.length}</strong><span>{labels.inventory}</span></div>
           <div><strong>{stats.resolved}</strong><span>{labels.resolved}</span></div>
-          <div><strong>{stats.driftedItems}</strong><span>{labels.drift}</span></div>
+          <div><strong>{stats.differenceGroups}</strong><span>{labels.drift}</span></div>
           <div><strong>{stats.duplicateGroups}</strong><span>{labels.duplicates}</span></div>
           <div><strong>{stats.unknown}</strong><span>{labels.unknown}</span></div>
         </div>

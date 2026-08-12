@@ -44,22 +44,25 @@ React UI
 
 ## Runtime integration boundary
 
-The app does not treat Codex's on-disk rollout JSONL as a permanent public contract. The v0.1 Codex adapter uses the experimental App Server protocol over local stdio for current skills/hooks, workspace thread listing, and read-only stored thread reads. Responses are bounded and normalized through an explicit metadata allowlist; raw responses are not persisted or logged.
+The app does not treat Codex's on-disk rollout JSONL as a permanent public contract. The current Codex adapter uses the experimental App Server protocol over local stdio for current skills/hooks, workspace thread listing, and read-only stored thread reads. Responses are bounded and normalized through an explicit metadata allowlist; raw responses are not persisted or logged.
 
 The flight recorder shows a linear sequence of turns and normalized item types. It excludes raw prompts, reasoning, tool arguments and file diffs. A completed turn is runtime activity, not verifier evidence or proof of success.
 
-Historical thread reads do not currently include a trustworthy historical instruction-source snapshot. Therefore v0.1 does not claim that current skills/hooks are the exact Harness used by an older run. Capturing and binding immutable context snapshots is an M2 requirement.
+Historical thread reads do not currently include a trustworthy historical instruction-source snapshot. Therefore the current release does not claim that current skills/hooks are the exact Harness used by an older run. Capturing and binding immutable context snapshots is an M2 requirement.
 
 Claude and other runtimes get separate adapters. Shared UI depends only on normalized entities.
 
 ## Security and privacy
 
 - All scanning is opt-in through a chosen workspace plus documented user-level Harness locations.
-- The MVP is read-only.
+- Repository discovery follows only the ancestor chain from the selected Git root to the selected workspace. This makes nested-project scope visible without scanning unrelated sibling projects.
+- The app is read-only by default. A separate narrow command path can load an already-scanned Memory file on demand and save only eligible existing Markdown files after confirmation and revision checks.
 - Files are size-limited before loading.
 - Sensitive patterns are redacted on a best-effort basis before entering UI previews.
 - Claude project memory is filtered to the selected workspace rather than scanning unrelated projects.
 - Opening a source file goes through a backend allowlist populated by the current scan.
+- Memory text is excluded from the regular snapshot and Share model. An explicit load uses an artifact identifier rather than a frontend-supplied path; an edit token binds a save to the scanned file revision.
+- Memory saves reject stale revisions, symbolic-link or multiply hard-linked sources, files owned by another user, special permission bits, byte-order marks or non-LF line endings, and unsupported formats; use a same-directory atomic replacement; and never provide create, rename, delete, force-save, backup, or autosave operations.
 - Session content and evidence are read only when the user opens a specific run.
 - Runtime normalization keeps allowlisted metadata and excludes raw prompts, reasoning, tool arguments and diffs.
 - The current Share snapshot contains aggregate counts only; it excludes content and absolute paths.

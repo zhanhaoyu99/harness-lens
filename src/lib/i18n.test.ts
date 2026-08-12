@@ -27,7 +27,10 @@ describe("i18n", () => {
       artifactIds: [],
     };
 
-    expect(messages.zh.labels.scope.worktree).toBe("工作树");
+    expect(messages.zh.labels.scope.user).toBe("用户全局");
+    expect(messages.zh.labels.scope.repo).toBe("项目级");
+    expect(messages.zh.labels.scope.nested).toBe("子项目级");
+    expect(messages.zh.labels.scope.worktree).toBe("项目绑定");
     expect(localizeWarning(warning, "zh").title).toBe("尚未连接运行时证据");
   });
 

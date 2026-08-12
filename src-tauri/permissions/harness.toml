@@ -1,11 +1,17 @@
 [[permission]]
 identifier = "harness-read"
-description = "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, and open sources from the current scan allowlist."
+description = "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist."
 commands.allow = [
   "choose_workspace",
   "load_default_workspace",
   "rescan_workspace",
   "inspect_runtime",
   "load_runtime_run",
+  "load_memory_artifact",
   "open_artifact",
 ]
+
+[[permission]]
+identifier = "harness-memory-edit"
+description = "Allows an explicit, confirmed save to an editable Markdown Memory artifact from the current scan allowlist."
+commands.allow = ["save_memory_artifact"]

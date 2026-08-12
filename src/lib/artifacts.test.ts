@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   artifactSummary,
-  driftCount,
+  counterpartDifferenceCount,
   effectiveCount,
   filterArtifacts,
 } from "./artifacts";
@@ -12,6 +12,7 @@ describe("artifact helpers", () => {
     const results = filterArtifacts(sampleSnapshot.artifacts, {
       provider: "codex",
       kind: "instructions",
+      scope: "repo",
       search: "project guidance",
     });
 
@@ -20,7 +21,31 @@ describe("artifact helpers", () => {
 
   it("keeps evidence states separate", () => {
     expect(effectiveCount(sampleSnapshot.artifacts)).toBe(4);
-    expect(driftCount(sampleSnapshot.artifacts)).toBe(2);
+    expect(counterpartDifferenceCount(sampleSnapshot)).toBe(1);
+  });
+
+  it("counts backend difference groups without collapsing project layers", () => {
+    const nestedDifferences = {
+      ...sampleSnapshot,
+      warnings: [
+        {
+          id: "counterpart-difference:Nested:parent:Skill:qa",
+          severity: "info" as const,
+          title: "Parent difference",
+          detail: "Parent layer",
+          artifactIds: ["parent-codex", "parent-claude"],
+        },
+        {
+          id: "counterpart-difference:Nested:child:Skill:qa",
+          severity: "info" as const,
+          title: "Child difference",
+          detail: "Child layer",
+          artifactIds: ["child-codex", "child-claude"],
+        },
+      ],
+    };
+
+    expect(counterpartDifferenceCount(nestedDifferences)).toBe(2);
   });
 
   it("surfaces a concise content summary", () => {

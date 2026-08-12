@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::{self, File},
     io::{BufReader, Read},
     path::{Path, PathBuf},
@@ -12,6 +12,7 @@ use sha2::{Digest, Sha256};
 use walkdir::{DirEntry, WalkDir};
 
 use crate::{
+    memory_edit::{memory_editability, MAX_MEMORY_BYTES},
     model::{
         HarnessArtifact, HarnessKind, HarnessProvider, HarnessScope, HarnessSnapshot,
         HarnessWarning, ResolutionState, WarningSeverity,
@@ -63,6 +64,7 @@ pub fn scan(workspace: &Path, home: &Path) -> Result<HarnessSnapshot, String> {
         &mut candidates,
         &mut scan_diagnostics,
     );
+    deduplicate_candidates(&mut candidates);
 
     let candidate_count = candidates.len();
     let mut total_file_bytes = 0_u64;
@@ -98,7 +100,7 @@ pub fn scan(workspace: &Path, home: &Path) -> Result<HarnessSnapshot, String> {
         ))
     });
 
-    let mut warnings = annotate_duplicates_and_drift(&mut artifacts);
+    let mut warnings = annotate_duplicates_and_counterpart_differences(&mut artifacts, &repo_root);
     if !scan_diagnostics.is_empty() {
         warnings.push(incomplete_scan_warning(&scan_diagnostics));
     }
@@ -222,6 +224,17 @@ fn collect_user_candidates(
             true,
         );
     }
+    collect_memory_source(
+        &codex.join("memories/extensions/ad_hoc"),
+        8,
+        &["md"],
+        HarnessProvider::Codex,
+        HarnessScope::User,
+        ResolutionState::Defined,
+        "User-maintained Codex memory extension discovered; runtime loading is not observed.",
+        output,
+        diagnostics,
+    );
 
     push_if_file(
         output,
@@ -289,9 +302,10 @@ fn collect_user_candidates(
         output,
         diagnostics,
     );
+    let project_chain = directory_chain(repo_root, workspace);
     collect_claude_project_memories(
         &claude.join("projects"),
-        [workspace, repo_root],
+        project_chain.iter().map(PathBuf::as_path),
         output,
         diagnostics,
     );
@@ -341,20 +355,28 @@ fn collect_repo_candidates(
         );
         collect_workflows(
             &directory.join(".agents/skills"),
-            scope,
+            scope.clone(),
             output,
             diagnostics,
         );
+        collect_project_directory_candidates(directory, scope, output, diagnostics);
     }
+}
 
-    let codex = repo_root.join(".codex");
+fn collect_project_directory_candidates(
+    directory: &Path,
+    scope: HarnessScope,
+    output: &mut Vec<Candidate>,
+    diagnostics: &mut Vec<String>,
+) {
+    let codex = directory.join(".codex");
     push_if_file(
         output,
         codex.join("config.toml"),
         None,
         HarnessKind::Config,
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Unknown,
         "Project config is effective only when the runtime trusts this project.",
         true,
@@ -366,7 +388,7 @@ fn collect_repo_candidates(
         Some("Project Codex hooks".into()),
         HarnessKind::Hook,
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Unknown,
         "Project hooks require trusted-project and runtime status evidence.",
         true,
@@ -380,7 +402,7 @@ fn collect_repo_candidates(
         ],
         HarnessKind::Hook,
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Unknown,
         "Project hook script requires trusted-project and runtime status evidence.",
         output,
@@ -392,18 +414,18 @@ fn collect_repo_candidates(
         &["rules", "md", "toml", "yaml", "yml", "json"],
         HarnessKind::Rule,
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Defined,
-        "Discovered in the repository Codex rules directory; runtime resolution is not observed.",
+        "Discovered in a project Codex rules directory; runtime resolution is not observed.",
         output,
         diagnostics,
     );
     collect_skill_dir(
         &codex.join("skills"),
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Defined,
-        "Discovered in the repository Codex skill directory; invocation is not observed.",
+        "Discovered in a project Codex skill directory; invocation is not observed.",
         output,
         diagnostics,
     );
@@ -412,21 +434,21 @@ fn collect_repo_candidates(
         8,
         &["md", "txt", "json", "jsonl", "toml", "yaml", "yml"],
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Defined,
-        "Repository memory metadata discovered; runtime loading is not observed.",
+        "Project memory metadata discovered; runtime loading is not observed.",
         output,
         diagnostics,
     );
     collect_agent_dir(
         &codex.join("agents"),
         HarnessProvider::Codex,
-        HarnessScope::Repo,
+        scope.clone(),
         output,
         diagnostics,
     );
 
-    let claude = repo_root.join(".claude");
+    let claude = directory.join(".claude");
     for name in ["settings.json", "settings.local.json"] {
         push_if_file(
             output,
@@ -434,7 +456,7 @@ fn collect_repo_candidates(
             None,
             HarnessKind::Config,
             HarnessProvider::Claude,
-            HarnessScope::Repo,
+            scope.clone(),
             ResolutionState::Defined,
             "Discovered; effective status requires Claude runtime evidence.",
             true,
@@ -444,7 +466,7 @@ fn collect_repo_candidates(
     collect_skill_dir(
         &claude.join("skills"),
         HarnessProvider::Claude,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Defined,
         "Discovered; actual invocation requires Claude runtime evidence.",
         output,
@@ -453,7 +475,7 @@ fn collect_repo_candidates(
     collect_agent_dir(
         &claude.join("agents"),
         HarnessProvider::Claude,
-        HarnessScope::Repo,
+        scope.clone(),
         output,
         diagnostics,
     );
@@ -463,9 +485,9 @@ fn collect_repo_candidates(
         &["md", "txt", "json", "toml", "yaml", "yml"],
         HarnessKind::Rule,
         HarnessProvider::Claude,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Defined,
-        "Repository Claude rule discovered; runtime resolution is not observed.",
+        "Project Claude rule discovered; runtime resolution is not observed.",
         output,
         diagnostics,
     );
@@ -475,9 +497,9 @@ fn collect_repo_candidates(
         &["md"],
         HarnessKind::Skill,
         HarnessProvider::Claude,
-        HarnessScope::Repo,
+        scope.clone(),
         ResolutionState::Defined,
-        "Legacy repository Claude command discovered; invocation is not observed.",
+        "Legacy project Claude command discovered; invocation is not observed.",
         output,
         diagnostics,
     );
@@ -487,9 +509,9 @@ fn collect_repo_candidates(
             8,
             &["md", "txt", "json", "jsonl", "toml", "yaml", "yml"],
             HarnessProvider::Claude,
-            HarnessScope::Repo,
+            scope.clone(),
             ResolutionState::Defined,
-            "Repository Claude memory metadata discovered; runtime loading is not observed.",
+            "Project Claude memory metadata discovered; runtime loading is not observed.",
             output,
             diagnostics,
         );
@@ -881,11 +903,14 @@ fn materialize(
     home: &Path,
     remaining_total_bytes: u64,
 ) -> Result<HarnessArtifact, String> {
-    let canonical_path = candidate
-        .path
+    let id = artifact_id(&candidate);
+    let source_path = candidate.path.clone();
+    let allowed_source_root = authorized_root(&candidate, repo_root, home);
+    let source_uses_symlink = path_uses_symlink_below_root(&source_path, &allowed_source_root);
+    let canonical_path = source_path
         .canonicalize()
         .map_err(|error| error.to_string())?;
-    let allowed_root = authorized_root(&candidate, repo_root, home)
+    let allowed_root = allowed_source_root
         .canonicalize()
         .map_err(|error| format!("Unable to resolve authorized root: {error}"))?;
     if !canonical_path.starts_with(&allowed_root) {
@@ -939,11 +964,26 @@ fn materialize(
         .strip_prefix(workspace)
         .map(|path| format!("./{}", path.to_string_lossy()))
         .unwrap_or_else(|_| path_string.clone());
-    let id_seed = format!(
-        "{:?}:{:?}:{}",
-        candidate.provider, candidate.kind, path_string
-    );
-    let id = hex::encode(Sha256::digest(id_seed.as_bytes()))[..24].to_string();
+    let (editable, editability_reason) = if candidate.kind == HarnessKind::Memory {
+        if metadata.len() > MAX_MEMORY_BYTES {
+            (
+                false,
+                Some(format!(
+                    "Memory files above {} KiB must be opened externally and cannot be edited in Harness Lens.",
+                    MAX_MEMORY_BYTES / 1024
+                )),
+            )
+        } else if source_uses_symlink {
+            (
+                false,
+                Some("Memory paths that use symbolic links are view-only.".to_string()),
+            )
+        } else {
+            memory_editability(&canonical_path)
+        }
+    } else {
+        (false, None)
+    };
 
     Ok(HarnessArtifact {
         id,
@@ -968,7 +1008,74 @@ fn materialize(
         description,
         sensitive: candidate.sensitive,
         truncated,
+        editable,
+        editability_reason,
     })
+}
+
+fn deduplicate_candidates(candidates: &mut Vec<Candidate>) {
+    let mut seen = HashSet::new();
+    candidates.retain(|candidate| {
+        seen.insert((
+            provider_id_tag(&candidate.provider),
+            kind_id_tag(&candidate.kind),
+            candidate.path.clone(),
+        ))
+    });
+}
+
+fn artifact_id(candidate: &Candidate) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(provider_id_tag(&candidate.provider).as_bytes());
+    hasher.update([0]);
+    hasher.update(kind_id_tag(&candidate.kind).as_bytes());
+    hasher.update([0]);
+    hash_source_path(&mut hasher, &candidate.path);
+    hex::encode(hasher.finalize())[..24].to_string()
+}
+
+#[cfg(unix)]
+fn hash_source_path(hasher: &mut Sha256, path: &Path) {
+    use std::os::unix::ffi::OsStrExt;
+
+    hasher.update(path.as_os_str().as_bytes());
+}
+
+#[cfg(windows)]
+fn hash_source_path(hasher: &mut Sha256, path: &Path) {
+    use std::os::windows::ffi::OsStrExt;
+
+    for unit in path.as_os_str().encode_wide() {
+        hasher.update(unit.to_le_bytes());
+    }
+}
+
+#[cfg(not(any(unix, windows)))]
+fn hash_source_path(hasher: &mut Sha256, path: &Path) {
+    hasher.update(path.to_string_lossy().as_bytes());
+}
+
+fn provider_id_tag(provider: &HarnessProvider) -> &'static str {
+    match provider {
+        HarnessProvider::Codex => "codex",
+        HarnessProvider::Claude => "claude",
+        HarnessProvider::Shared => "shared",
+        HarnessProvider::Plugin => "plugin",
+    }
+}
+
+fn kind_id_tag(kind: &HarnessKind) -> &'static str {
+    match kind {
+        HarnessKind::Instructions => "instructions",
+        HarnessKind::Skill => "skill",
+        HarnessKind::Hook => "hook",
+        HarnessKind::Agent => "agent",
+        HarnessKind::Config => "config",
+        HarnessKind::Memory => "memory",
+        HarnessKind::Rule => "rule",
+        HarnessKind::Workflow => "workflow",
+        HarnessKind::Plugin => "plugin",
+    }
 }
 
 fn authorized_root(candidate: &Candidate, repo_root: &Path, home: &Path) -> PathBuf {
@@ -982,6 +1089,23 @@ fn authorized_root(candidate: &Candidate, repo_root: &Path, home: &Path) -> Path
             HarnessProvider::Plugin => home.to_path_buf(),
         },
     }
+}
+
+fn path_uses_symlink_below_root(path: &Path, root: &Path) -> bool {
+    let Ok(relative) = path.strip_prefix(root) else {
+        return true;
+    };
+    let mut current = root.to_path_buf();
+    if fs::symlink_metadata(&current).is_ok_and(|metadata| metadata.file_type().is_symlink()) {
+        return true;
+    }
+    for component in relative.components() {
+        current.push(component);
+        if fs::symlink_metadata(&current).is_ok_and(|metadata| metadata.file_type().is_symlink()) {
+            return true;
+        }
+    }
+    false
 }
 
 fn read_preview_and_hash(
@@ -1084,18 +1208,23 @@ fn parse_skill_frontmatter(content: &str) -> (Option<String>, Option<String>) {
     (name, description)
 }
 
-fn annotate_duplicates_and_drift(artifacts: &mut [HarnessArtifact]) -> Vec<HarnessWarning> {
+fn annotate_duplicates_and_counterpart_differences(
+    artifacts: &mut [HarnessArtifact],
+    repo_root: &Path,
+) -> Vec<HarnessWarning> {
     let mut warnings = Vec::new();
     let mut by_hash: HashMap<(String, String), Vec<usize>> = HashMap::new();
-    let mut by_name: HashMap<(String, String), Vec<usize>> = HashMap::new();
+    let mut by_name: HashMap<(String, String, String, String), Vec<usize>> = HashMap::new();
     for (index, artifact) in artifacts.iter().enumerate() {
         let kind = format!("{:?}", artifact.kind);
+        let scope = format!("{:?}", artifact.scope);
+        let scope_anchor = counterpart_scope_anchor(artifact, repo_root);
         by_hash
             .entry((kind.clone(), artifact.content_hash.clone()))
             .or_default()
             .push(index);
         by_name
-            .entry((kind, artifact.name.to_lowercase()))
+            .entry((scope, scope_anchor, kind, artifact.name.to_lowercase()))
             .or_default()
             .push(index);
     }
@@ -1118,48 +1247,85 @@ fn annotate_duplicates_and_drift(artifacts: &mut [HarnessArtifact]) -> Vec<Harne
         });
     }
 
-    for ((kind, name), indexes) in by_name.into_iter().filter(|(_, indexes)| indexes.len() > 1) {
-        let hashes = indexes
-            .iter()
-            .map(|index| artifacts[*index].content_hash.clone())
-            .collect::<std::collections::HashSet<_>>();
-        let providers = indexes
-            .iter()
-            .map(|index| format!("{:?}", artifacts[*index].provider))
-            .collect::<std::collections::HashSet<_>>();
-        if hashes.len() <= 1 || providers.len() <= 1 {
-            continue;
-        }
-        let ids = indexes
-            .iter()
-            .map(|index| artifacts[*index].id.clone())
-            .collect::<Vec<_>>();
+    for ((scope, scope_anchor, kind, name), indexes) in
+        by_name.into_iter().filter(|(_, indexes)| indexes.len() > 1)
+    {
         let peers = indexes
             .iter()
             .map(|index| {
                 (
                     artifacts[*index].id.clone(),
                     artifacts[*index].provider.clone(),
+                    artifacts[*index].content_hash.clone(),
                 )
             })
             .collect::<Vec<_>>();
+        let mut ids = Vec::new();
         for index in indexes {
             let provider = artifacts[index].provider.clone();
-            artifacts[index].counterpart_id = peers
+            let content_hash = artifacts[index].content_hash.clone();
+            let counterpart_id = peers
                 .iter()
-                .find(|(_, candidate_provider)| *candidate_provider != provider)
-                .map(|(id, _)| id.clone());
+                .find(|(_, candidate_provider, candidate_hash)| {
+                    *candidate_provider != provider && *candidate_hash != content_hash
+                })
+                .map(|(id, _, _)| id.clone());
+            if counterpart_id.is_some() {
+                ids.push(artifacts[index].id.clone());
+                artifacts[index].counterpart_id = counterpart_id;
+            }
         }
+        if ids.is_empty() {
+            continue;
+        }
+        let anchor_hash = hex::encode(Sha256::digest(scope_anchor.as_bytes()));
         warnings.push(HarnessWarning {
-            id: format!("drift:{kind}:{name}"),
-            severity: WarningSeverity::Warning,
-            title: format!("Provider drift: {name}"),
-            detail: "Same-name Harness items differ across providers.".to_string(),
+            id: format!(
+                "counterpart-difference:{scope}:{}:{kind}:{name}",
+                &anchor_hash[..12]
+            ),
+            severity: WarningSeverity::Info,
+            title: format!("Same-name content differs: {name}"),
+            detail: "Same-name Harness items in the same project layer have different content across providers."
+                .to_string(),
             artifact_ids: ids,
         });
     }
 
     warnings
+}
+
+fn counterpart_scope_anchor(artifact: &HarnessArtifact, repo_root: &Path) -> String {
+    match artifact.scope {
+        HarnessScope::User => "user".to_string(),
+        HarnessScope::Repo => repo_root.to_string_lossy().into_owned(),
+        HarnessScope::Nested => project_layer_anchor(Path::new(&artifact.path), repo_root)
+            .to_string_lossy()
+            .into_owned(),
+        HarnessScope::Worktree => worktree_anchor(Path::new(&artifact.path))
+            .to_string_lossy()
+            .into_owned(),
+    }
+}
+
+fn project_layer_anchor(path: &Path, fallback: &Path) -> PathBuf {
+    for ancestor in path.ancestors() {
+        let is_harness_directory = ancestor
+            .file_name()
+            .is_some_and(|name| name == ".codex" || name == ".claude" || name == ".agents");
+        if is_harness_directory {
+            return ancestor.parent().unwrap_or(fallback).to_path_buf();
+        }
+    }
+    path.parent().unwrap_or(fallback).to_path_buf()
+}
+
+fn worktree_anchor(path: &Path) -> PathBuf {
+    path.ancestors()
+        .find(|ancestor| ancestor.file_name().is_some_and(|name| name == "memory"))
+        .and_then(Path::parent)
+        .unwrap_or_else(|| path.parent().unwrap_or(path))
+        .to_path_buf()
 }
 
 fn directory_chain(root: &Path, workspace: &Path) -> Vec<PathBuf> {
@@ -1212,12 +1378,17 @@ fn system_time_to_rfc3339(time: SystemTime) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, fs::File, path::Path, process::Command};
+    use std::{collections::HashSet, fs, fs::File, path::Path, process::Command};
 
     use tempfile::tempdir;
 
-    use super::{scan, MAX_CONTENT_BYTES, MAX_FILE_BYTES};
-    use crate::model::{HarnessKind, HarnessScope, ResolutionState};
+    use super::{
+        artifact_id, deduplicate_candidates, scan, Candidate, MAX_CONTENT_BYTES, MAX_FILE_BYTES,
+    };
+    use crate::{
+        memory_edit::MAX_MEMORY_BYTES,
+        model::{HarnessKind, HarnessProvider, HarnessScope, ResolutionState, WarningSeverity},
+    };
 
     fn initialize_git_repository(path: &Path) {
         let status = Command::new("git")
@@ -1394,6 +1565,165 @@ mod tests {
     }
 
     #[test]
+    fn discovers_project_harness_content_at_each_workspace_ancestor() {
+        let home = tempdir().unwrap();
+        let repository = tempdir().unwrap();
+        initialize_git_repository(repository.path());
+        let package = repository.path().join("packages");
+        let workspace = package.join("app");
+        fs::create_dir_all(&workspace).unwrap();
+
+        fs::create_dir_all(repository.path().join(".codex/rules")).unwrap();
+        fs::write(
+            repository.path().join(".codex/rules/root.rules"),
+            "allow root",
+        )
+        .unwrap();
+        write_skill(
+            &package.join(".codex/skills/package-codex/SKILL.md"),
+            "package-codex",
+            "Package Codex skill.",
+        );
+        fs::create_dir_all(workspace.join(".claude/rules")).unwrap();
+        fs::write(
+            workspace.join(".claude/rules/app.md"),
+            "Use app-level rules.",
+        )
+        .unwrap();
+        fs::create_dir_all(workspace.join(".claude/memory")).unwrap();
+        fs::write(
+            workspace.join(".claude/memory/LOCAL.md"),
+            "App-level memory.",
+        )
+        .unwrap();
+
+        let snapshot = scan(&workspace, home.path()).unwrap();
+        let artifact_for = |suffix: &str| {
+            snapshot
+                .artifacts
+                .iter()
+                .find(|item| item.path.ends_with(suffix))
+                .unwrap_or_else(|| panic!("missing artifact: {suffix}"))
+        };
+
+        assert_eq!(
+            artifact_for(".codex/rules/root.rules").scope,
+            HarnessScope::Repo
+        );
+        assert_eq!(
+            artifact_for("packages/.codex/skills/package-codex/SKILL.md").scope,
+            HarnessScope::Nested
+        );
+        assert_eq!(
+            artifact_for("packages/app/.claude/rules/app.md").scope,
+            HarnessScope::Nested
+        );
+        assert_eq!(
+            artifact_for("packages/app/.claude/memory/LOCAL.md").scope,
+            HarnessScope::Nested
+        );
+        assert_eq!(
+            snapshot
+                .artifacts
+                .iter()
+                .filter(|item| item.path.ends_with(".claude/memory/LOCAL.md"))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn discovers_user_maintained_codex_memory_extensions_only() {
+        let home = tempdir().unwrap();
+        let workspace = tempdir().unwrap();
+        let memories = home.path().join(".codex/memories");
+        fs::create_dir_all(memories.join("extensions/ad_hoc/notes")).unwrap();
+        fs::create_dir_all(memories.join("rollout_summaries")).unwrap();
+        fs::create_dir_all(memories.join("skills/example")).unwrap();
+        fs::write(memories.join("MEMORY.md"), "Memory registry").unwrap();
+        fs::write(memories.join("memory_summary.md"), "Memory summary").unwrap();
+        fs::write(
+            memories.join("extensions/ad_hoc/preferences.md"),
+            "Preference extension",
+        )
+        .unwrap();
+        fs::write(
+            memories.join("extensions/ad_hoc/notes/project.md"),
+            "Project note",
+        )
+        .unwrap();
+        fs::write(
+            memories.join("rollout_summaries/session.md"),
+            "Runtime evidence",
+        )
+        .unwrap();
+        fs::write(
+            memories.join("skills/example/SKILL.md"),
+            "Memory-related skill",
+        )
+        .unwrap();
+
+        let snapshot = scan(workspace.path(), home.path()).unwrap();
+        let memory_paths = snapshot
+            .artifacts
+            .iter()
+            .filter(|item| item.kind == HarnessKind::Memory)
+            .map(|item| item.path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(memory_paths.len(), 4);
+        assert!(memory_paths
+            .iter()
+            .any(|path| path.ends_with("memories/MEMORY.md")));
+        assert!(memory_paths
+            .iter()
+            .any(|path| path.ends_with("memories/memory_summary.md")));
+        assert!(memory_paths
+            .iter()
+            .any(|path| path.ends_with("extensions/ad_hoc/preferences.md")));
+        assert!(memory_paths
+            .iter()
+            .any(|path| path.ends_with("extensions/ad_hoc/notes/project.md")));
+        assert!(!memory_paths
+            .iter()
+            .any(|path| path.contains("rollout_summaries")));
+        assert!(!memory_paths
+            .iter()
+            .any(|path| path.contains("memories/skills")));
+        assert!(snapshot
+            .artifacts
+            .iter()
+            .filter(|item| item.kind == HarnessKind::Memory)
+            .all(|item| item.scope == HarnessScope::User && item.content.is_none()));
+    }
+
+    #[test]
+    fn marks_memory_above_editor_limit_as_external_only() {
+        let home = tempdir().unwrap();
+        let workspace = tempdir().unwrap();
+        let memories = workspace.path().join(".codex/memories");
+        fs::create_dir_all(&memories).unwrap();
+        fs::write(
+            memories.join("LARGE.md"),
+            vec![b'x'; MAX_MEMORY_BYTES as usize + 1],
+        )
+        .unwrap();
+
+        let snapshot = scan(workspace.path(), home.path()).unwrap();
+        let memory = snapshot
+            .artifacts
+            .iter()
+            .find(|artifact| artifact.path.ends_with(".codex/memories/LARGE.md"))
+            .expect("large Memory artifact");
+
+        assert!(!memory.editable);
+        assert!(memory
+            .editability_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("opened externally")));
+    }
+
+    #[test]
     fn discovers_claude_rules_commands_and_memory_as_defined_metadata() {
         let home = tempdir().unwrap();
         let workspace = tempdir().unwrap();
@@ -1503,7 +1833,30 @@ mod tests {
     }
 
     #[test]
-    fn reports_cross_provider_drift_without_overwriting_resolution() {
+    fn deduplicates_repeated_candidates_for_the_same_source_identity() {
+        let workspace = tempdir().unwrap();
+        let candidate = Candidate {
+            path: workspace.path().join(".codex/memories/project.md"),
+            name: None,
+            kind: HarnessKind::Memory,
+            provider: HarnessProvider::Codex,
+            scope: HarnessScope::Repo,
+            resolution: ResolutionState::Defined,
+            reason: "test candidate".to_string(),
+            sensitive: true,
+            metadata_only: true,
+        };
+        let expected_id = artifact_id(&candidate);
+        let mut candidates = vec![candidate.clone(), candidate];
+
+        deduplicate_candidates(&mut candidates);
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(artifact_id(&candidates[0]), expected_id);
+    }
+
+    #[test]
+    fn reports_same_scope_provider_difference_without_overwriting_resolution() {
         let home = tempdir().unwrap();
         let workspace = tempdir().unwrap();
         write_skill(
@@ -1531,10 +1884,144 @@ mod tests {
         assert!(qa_items
             .iter()
             .any(|item| item.resolution == ResolutionState::Defined));
-        assert!(snapshot
+        assert!(snapshot.warnings.iter().any(|warning| {
+            warning.id.starts_with("counterpart-difference:Repo:")
+                && warning.id.ends_with(":Skill:qa")
+                && matches!(&warning.severity, &WarningSeverity::Info)
+        }));
+    }
+
+    #[test]
+    fn compares_counterparts_only_within_the_same_nested_project_layer() {
+        let home = tempdir().unwrap();
+        let repository = tempdir().unwrap();
+        initialize_git_repository(repository.path());
+        let package = repository.path().join("packages");
+        let workspace = package.join("app");
+        fs::create_dir_all(&workspace).unwrap();
+
+        write_skill(
+            &package.join(".agents/skills/qa/SKILL.md"),
+            "qa",
+            "Parent shared QA skill.",
+        );
+        write_skill(
+            &workspace.join(".agents/skills/qa/SKILL.md"),
+            "qa",
+            "Child shared QA skill.",
+        );
+        write_skill(
+            &workspace.join(".claude/skills/qa/SKILL.md"),
+            "qa",
+            "Child Claude QA skill.",
+        );
+
+        let snapshot = scan(&workspace, home.path()).unwrap();
+        let parent = snapshot
+            .artifacts
+            .iter()
+            .find(|item| item.path.ends_with("packages/.agents/skills/qa/SKILL.md"))
+            .expect("parent-layer QA skill");
+        let child_items = snapshot
+            .artifacts
+            .iter()
+            .filter(|item| {
+                item.name == "qa"
+                    && item.scope == HarnessScope::Nested
+                    && item.path.contains("packages/app/")
+            })
+            .collect::<Vec<_>>();
+        let warnings = snapshot
             .warnings
             .iter()
-            .any(|warning| warning.id == "drift:Skill:qa"));
+            .filter(|warning| warning.id.starts_with("counterpart-difference:Nested:"))
+            .collect::<Vec<_>>();
+
+        assert_eq!(child_items.len(), 2);
+        assert!(parent.counterpart_id.is_none());
+        assert!(child_items.iter().all(|item| item.counterpart_id.is_some()));
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(warnings[0].artifact_ids.len(), 2);
+        assert!(!warnings[0].artifact_ids.contains(&parent.id));
+        assert!(child_items
+            .iter()
+            .all(|item| warnings[0].artifact_ids.contains(&item.id)));
+    }
+
+    #[test]
+    fn does_not_report_counterpart_difference_across_scopes() {
+        let home = tempdir().unwrap();
+        let workspace = tempdir().unwrap();
+        write_skill(
+            &home.path().join(".agents/skills/qa/SKILL.md"),
+            "qa",
+            "User QA skill.",
+        );
+        write_skill(
+            &workspace.path().join(".claude/skills/qa/SKILL.md"),
+            "qa",
+            "Project QA skill.",
+        );
+
+        let snapshot = scan(workspace.path(), home.path()).unwrap();
+        let qa_items = snapshot
+            .artifacts
+            .iter()
+            .filter(|item| item.kind == HarnessKind::Skill && item.name == "qa")
+            .collect::<Vec<_>>();
+
+        assert_eq!(qa_items.len(), 2);
+        assert!(qa_items.iter().any(|item| item.scope == HarnessScope::User));
+        assert!(qa_items.iter().any(|item| item.scope == HarnessScope::Repo));
+        assert!(qa_items.iter().all(|item| item.counterpart_id.is_none()));
+        assert!(!snapshot
+            .warnings
+            .iter()
+            .any(|warning| warning.id.starts_with("counterpart-difference:")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn gives_real_and_symlinked_memory_unique_ids_and_only_edits_the_real_source() {
+        use std::os::unix::fs::symlink;
+
+        let home = tempdir().unwrap();
+        let workspace = tempdir().unwrap();
+        initialize_git_repository(workspace.path());
+        fs::create_dir_all(workspace.path().join(".codex/memories")).unwrap();
+        let target = workspace.path().join(".codex/memories/real.md");
+        fs::write(&target, "Editable project memory.").unwrap();
+        symlink("real.md", workspace.path().join(".codex/memories/alias.md")).unwrap();
+
+        let snapshot = scan(workspace.path(), home.path()).unwrap();
+        let memories = snapshot
+            .artifacts
+            .iter()
+            .filter(|artifact| artifact.kind == HarnessKind::Memory)
+            .collect::<Vec<_>>();
+        let real = memories
+            .iter()
+            .find(|artifact| artifact.editable)
+            .expect("the real memory source remains editable");
+        let alias = memories
+            .iter()
+            .find(|artifact| !artifact.editable)
+            .expect("the symbolic-link alias remains inspectable but view-only");
+        let artifact_ids = snapshot
+            .artifacts
+            .iter()
+            .map(|artifact| artifact.id.as_str())
+            .collect::<HashSet<_>>();
+
+        assert_eq!(memories.len(), 2);
+        assert_ne!(real.id, alias.id);
+        assert_eq!(artifact_ids.len(), snapshot.artifacts.len());
+        assert_eq!(real.path, target.canonicalize().unwrap().to_string_lossy());
+        assert_eq!(alias.path, real.path);
+        assert!(alias
+            .editability_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("symbolic links")));
     }
 
     #[cfg(unix)]

@@ -1,4 +1,4 @@
-import { FileText, ShieldAlert } from "lucide-react";
+import { FileText, GitCompareArrows, ShieldAlert } from "lucide-react";
 import { artifactSummary } from "../lib/artifacts";
 import { messages, type Language } from "../lib/i18n";
 import { shortPath } from "../lib/labels";
@@ -80,8 +80,12 @@ export function HarnessTable({
                   {copy.labels.resolution[artifact.resolution]}
                 </span>
                 {artifact.counterpartId ? (
-                  <span className="status-pill status-drifted diagnostic-pill">
-                    {copy.labels.resolution.drifted}
+                  <span
+                    className="diagnostic-tag"
+                    title={copy.inspector.sameNameDifferenceBody}
+                  >
+                    <GitCompareArrows size={11} />
+                    {copy.inspector.sameNameDifference}
                   </span>
                 ) : null}
               </td>
