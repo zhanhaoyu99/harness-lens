@@ -44,11 +44,11 @@ React UI
 
 ## Runtime integration boundary
 
-The app does not treat Codex's on-disk rollout JSONL as a permanent public contract. The v0.1 Codex adapter uses the experimental App Server protocol over local stdio for current skills/hooks, workspace thread listing, and read-only stored thread reads. Responses are bounded and normalized through an explicit metadata allowlist; raw responses are not persisted or logged.
+The app does not treat Codex's on-disk rollout JSONL as a permanent public contract. The current Codex adapter uses the experimental App Server protocol over local stdio for current skills/hooks, workspace thread listing, and read-only stored thread reads. Responses are bounded and normalized through an explicit metadata allowlist; raw responses are not persisted or logged.
 
 The flight recorder shows a linear sequence of turns and normalized item types. It excludes raw prompts, reasoning, tool arguments and file diffs. A completed turn is runtime activity, not verifier evidence or proof of success.
 
-Historical thread reads do not currently include a trustworthy historical instruction-source snapshot. Therefore v0.1 does not claim that current skills/hooks are the exact Harness used by an older run. Capturing and binding immutable context snapshots is an M2 requirement.
+Historical thread reads do not currently include a trustworthy historical instruction-source snapshot. Therefore the current release does not claim that current skills/hooks are the exact Harness used by an older run. Capturing and binding immutable context snapshots is an M2 requirement.
 
 Claude and other runtimes get separate adapters. Shared UI depends only on normalized entities.
 

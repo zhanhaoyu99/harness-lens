@@ -1,6 +1,6 @@
 # Privacy
 
-Harness Lens is designed around local inspection of sensitive developer context. This document describes the v0.1 data boundary; it is not a promise about unrelated tools such as Codex CLI, Claude Code, editors, or the operating system.
+Harness Lens is designed around local inspection of sensitive developer context. This document describes the current release data boundary; it is not a promise about unrelated tools such as Codex CLI, Claude Code, editors, or the operating system.
 
 ## What Harness Lens reads
 
@@ -14,7 +14,7 @@ After a user selects a workspace, the app may read:
 
 The scanner records normalized metadata such as type, provider, scope, path, size, modification time, content hash, resolution state, and a bounded redacted preview. It reads Memory bytes locally to calculate their hash, but Memory sources remain metadata-only in the regular snapshot and their raw text is not sent to React. If the user explicitly opens one, its original, potentially unredacted text is loaded into transient editor state and is not added to Share output.
 
-## What Harness Lens does not do in v0.1
+## What Harness Lens does not do in the current release
 
 - No Harness Lens account, cloud sync, analytics, advertising, or telemetry.
 - No remote upload of scanned files or Codex run content.
@@ -44,7 +44,7 @@ The Share view is intentionally aggregate-only and excludes file contents and ab
 
 ## Local persistence
 
-v0.1 does not maintain a cloud database. Browser/UI state and normal operating-system caches may exist locally. Future local snapshot persistence will require an explicit retention and deletion design before release.
+The current release does not maintain a cloud database. Browser/UI state and normal operating-system caches may exist locally. Future local snapshot persistence will require an explicit retention and deletion design before release.
 
 ## Workspace boundaries
 

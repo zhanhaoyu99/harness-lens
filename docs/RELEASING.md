@@ -1,6 +1,6 @@
 # Release process
 
-Harness Lens uses Semantic Versioning and publishes intentionally conservative macOS artifacts. v0.1 targets Apple Silicon and is ad-hoc signed, not Apple-notarized.
+Harness Lens uses Semantic Versioning and publishes intentionally conservative macOS artifacts. The current distribution targets Apple Silicon and is ad-hoc signed, not Apple-notarized.
 
 ## Preconditions
 
@@ -51,7 +51,7 @@ The workflow deliberately creates a **draft** release. It does not auto-publish 
 For a local artifact:
 
 ```bash
-shasum -a 256 "Harness-Lens_0.1.1_aarch64.dmg" > Harness-Lens_0.1.1_aarch64.dmg.sha256
+shasum -a 256 "Harness-Lens_0.2.0_aarch64.dmg" > Harness-Lens_0.2.0_aarch64.dmg.sha256
 ```
 
 Keep the filename in the checksum file identical to the uploaded asset name.

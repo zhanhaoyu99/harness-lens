@@ -59,10 +59,10 @@ Run Recorder 只保留白名单中的元数据，不展示原始 Prompt、工具
 
 ### Release 版本
 
-首个版本仅支持 **Apple Silicon（macOS arm64，macOS 11+）**。从 [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases) 下载 `.dmg` 及校验文件，然后验证：
+当前分发版本仅支持 **Apple Silicon（macOS arm64，macOS 11+）**。从 [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases) 下载 `.dmg` 及校验文件，然后验证：
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.1.1_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.2.0_aarch64.dmg.sha256
 ```
 
 当前产物采用 ad-hoc 签名，**尚未经过 Apple Notarization**。Gatekeeper 可能弹出警告或阻止启动。请先核对校验值并确认信任本项目，再通过 macOS「隐私与安全性」手动打开。在完成公证前，从源码构建是更稳妥的方式。
@@ -117,14 +117,14 @@ pnpm tauri build
 - **Memory 原文按需加载：**正文不会进入常规快照或 Share；只有用户主动查看时才进入编辑器，并可能包含未经脱敏的敏感内容。
 - **明确范围：**扫描从用户选择的工作区以及文档声明的用户级 Harness 位置开始。
 - **尽力脱敏：**常见密钥模式会在进入预览前被处理，但任何脱敏器都无法保证识别所有任意敏感文本。
-- **保守分享：**v0.1 的 Share 只输出聚合统计。
+- **保守分享：**当前版本的 Share 只输出聚合统计。
 - **实验性运行时：**Codex App Server 的兼容性可能变化；连接错误会明确显示，不会伪造证据。
 
 请把预览和截图都视为可能包含敏感信息，分享前务必人工检查。详见[隐私说明](docs/PRIVACY.md)、[威胁模型](docs/THREAT-MODEL.md)和[安全策略](SECURITY.md)。
 
 ## 项目状态
 
-Harness Lens 是一个早期、持续维护的开源项目。v0.1 已可用于本地 Harness 检查与 Codex Run 排查，但还不能把历史 Run 与不可变的 Harness 快照准确绑定，也不能提供可信的单次成本或判断任务是否成功。
+Harness Lens 是一个早期、持续维护的开源项目。当前版本已支持本地 Harness 检查、分层 Memory 管理与 Codex Run 排查，但还不能把历史 Run 与不可变的 Harness 快照准确绑定，也不能提供可信的单次成本或判断任务是否成功。
 
 Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详见 [Roadmap](docs/ROADMAP.md)、[产品方向](docs/PRODUCT.md)、[架构](docs/ARCHITECTURE.md)和[版本化兼容性证据](docs/COMPATIBILITY.md)。
 

@@ -74,7 +74,7 @@ The first release implements Overview, Items, the aggregate Share snapshot, and 
 - Two-run and two-snapshot comparison.
 - Redacted PNG/static HTML run sharing.
 
-The v0.1 runtime view is explicitly limited: current runtime declarations cannot be presented as the historical effective Harness for an older thread, and completion status cannot be presented as task success.
+The current runtime view is explicitly limited: current runtime declarations cannot be presented as the historical effective Harness for an older thread, and completion status cannot be presented as task success.
 
 ### Explicitly later
 

@@ -2,7 +2,7 @@
 
 ## Scope
 
-This threat model covers the Harness Lens v0.1 desktop app, filesystem scanner, Tauri command boundary, Share snapshot, and experimental Codex App Server adapter on macOS.
+This threat model covers the current Harness Lens desktop app, filesystem scanner, Tauri command boundary, Share snapshot, and experimental Codex App Server adapter on macOS.
 
 ## Assets to protect
 
@@ -41,9 +41,9 @@ User-level Harness files and the locally installed Codex binary are trusted more
 | Malicious path is opened | Only artifacts from the current scan can be opened | Same-user time-of-check/time-of-use replacement remains possible |
 | A Memory edit overwrites the wrong or newer file | Artifact-ID allowlist, short-lived revision-bound edit token, unsupported ownership/link/permission cases made view-only, explicit native confirmation, conflict detection, and same-directory atomic replacement | A malicious process already running as the same user remains outside the isolation boundary; macOS ACLs and extended attributes are not preserved by the current editor |
 | Raw Memory text leaks through a normal snapshot or Share | Memory is metadata-only in normal scans and loaded only on explicit request into transient editor state | The user can still copy or screenshot sensitive editor text |
-| Shared report leaks content | v0.1 Share output is aggregate-only; absolute paths and content excluded | Screenshots and manual copying remain outside the export boundary |
+| Shared report leaks content | Current Share output is aggregate-only; absolute paths and content excluded | Screenshots and manual copying remain outside the export boundary |
 | Activity is mistaken for success | Four-stage model; run completion is not evaluation | UI wording regressions can reintroduce misleading claims |
-| Compromised dependency or build | Lockfiles, CI, Dependabot, checksums | v0.1 artifacts are not notarized and the build is not yet reproducible |
+| Compromised dependency or build | Lockfiles, CI, Dependabot, checksums | Current artifacts are not notarized and the build is not yet reproducible |
 
 ## Runtime adapter constraints
 

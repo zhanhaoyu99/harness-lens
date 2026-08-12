@@ -6,10 +6,10 @@ Harness Lens reads local developer configuration and runtime metadata, so privac
 
 | Version | Supported |
 |---|---|
-| Latest `0.1.x` release | Yes |
-| Older pre-release builds | No |
+| Latest pre-1.0 release | Yes |
+| Older releases and development builds | No |
 
-Until the project reaches 1.0, security fixes are shipped in the newest patch release rather than backported.
+Until the project reaches 1.0, security fixes are shipped only in the newest release rather than backported.
 
 ## Report a vulnerability privately
 

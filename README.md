@@ -59,10 +59,10 @@ The run recorder normalizes allowlisted metadata. It does not display raw prompt
 
 ### Release build
 
-The first release targets **Apple Silicon (macOS arm64, macOS 11+)**. Download the `.dmg` and its checksum from [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases), then verify it:
+The current distribution targets **Apple Silicon (macOS arm64, macOS 11+)**. Download the `.dmg` and its checksum from [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases), then verify it:
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.1.1_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.2.0_aarch64.dmg.sha256
 ```
 
 Current release artifacts are ad-hoc signed and **not notarized by Apple**. Gatekeeper may warn or block the app. Only open it through macOS Privacy & Security after verifying the checksum and deciding that you trust this project. Building from source is the safest option while notarization is pending.
@@ -117,14 +117,14 @@ Bundles are written below `src-tauri/target/release/bundle/` (or a target-specif
 - **Opt-in raw Memory:** Memory text is not included in the normal snapshot or Share output. It reaches the editor only after the user asks to view that file and may contain unredacted sensitive text.
 - **Explicit scope:** scanning starts from a workspace chosen by the user plus documented user-level Harness locations.
 - **Best-effort redaction:** common secret patterns are redacted before previews, but no redactor can guarantee that arbitrary sensitive text is removed.
-- **Conservative sharing:** the v0.1 Share view contains aggregate counts only.
+- **Conservative sharing:** the current Share view contains aggregate counts only.
 - **Experimental runtime:** Codex App Server compatibility can change. Runtime errors are shown instead of silently fabricating evidence.
 
 Treat all previews and screenshots as potentially sensitive. Review anything before sharing it. See [Privacy](docs/PRIVACY.md), [Threat model](docs/THREAT-MODEL.md), and [Security policy](SECURITY.md).
 
 ## Project status
 
-Harness Lens is an early, actively maintained open-source project. v0.1 is useful for local inspection and Codex run forensics, but it does not yet bind a historical run to an immutable Harness snapshot, calculate trustworthy per-run cost, or judge task success.
+Harness Lens is an early, actively maintained open-source project. The current release supports local inspection, scoped Memory management, and Codex run forensics, but it does not yet bind a historical run to an immutable Harness snapshot, calculate trustworthy per-run cost, or judge task success.
 
 The roadmap prioritizes those evidence boundaries over adding orchestration features. See [Roadmap](docs/ROADMAP.md), [Product direction](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), and the [versioned compatibility evidence](docs/COMPATIBILITY.md).
 
