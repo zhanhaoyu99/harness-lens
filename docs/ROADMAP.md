@@ -24,6 +24,13 @@ Each transition requires stronger evidence. A later stage must never be inferred
 
 Known evidence gap: current runtime declarations and historical thread activity can be inspected, but v0.1 cannot prove that the current declarations are the exact ones used by an older thread.
 
+## Unreleased — Memory and project scope
+
+- [x] On-demand viewing and narrow, explicit editing of existing recognized Memory Markdown files.
+- [x] Separate project, nested-project, project-bound, and user-global scope labels.
+- [x] Scan project and nested-project Harness sources along the active workspace ancestor chain.
+- [x] Present same-name cross-tool content differences as informational diagnostics rather than resolution states.
+
 ## M2 — Reproducible context snapshots
 
 - Persist immutable, content-addressed Harness snapshots locally.
@@ -62,7 +69,7 @@ Exit criterion: an evaluation result links to independent, inspectable evidence 
 ## Explicit non-goals for the current roadmap
 
 - Executing arbitrary agent workflows from the desktop app.
-- Editing Rules, Skills, Hooks, or Memory.
+- Editing Rules, Skills, Hooks, Agents, Config, Workflows, generated Memory, or arbitrary files. Only the narrow existing-Memory-Markdown editor is in scope.
 - Claiming semantic equivalence between Codex and Claude Harness concepts.
 - Scoring task quality without an independent verifier.
 - Uploading private run content to a hosted service by default.

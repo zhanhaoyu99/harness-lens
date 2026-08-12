@@ -21,10 +21,14 @@ import {
 } from "lucide-react";
 import { HarnessMap, type MapFilter } from "./components/HarnessMap";
 import { HarnessTable } from "./components/HarnessTable";
-import { Inspector } from "./components/Inspector";
+import { Inspector, type LoadedMemoryState } from "./components/Inspector";
 import { RuntimeRuns } from "./components/RuntimeRuns";
 import { ShareSnapshot } from "./components/ShareSnapshot";
-import { driftCount, effectiveCount, filterArtifacts } from "./lib/artifacts";
+import {
+  counterpartDifferenceCount,
+  effectiveCount,
+  filterArtifacts,
+} from "./lib/artifacts";
 import {
   getInitialLanguage,
   localizeWarning,
@@ -42,9 +46,11 @@ import {
   inspectRuntime,
   isTauriRuntime,
   loadDefaultWorkspace,
+  loadMemoryArtifact,
   loadRuntimeRun,
   rescanWorkspace,
   revealSource,
+  saveMemoryArtifact,
 } from "./lib/tauri";
 import type {
   CodexRunDetail,
@@ -52,7 +58,9 @@ import type {
   ExplorerMode,
   HarnessArtifact,
   HarnessKind,
+  HarnessScope,
   HarnessSnapshot,
+  MemorySaveError,
   PrimarySection,
 } from "./types";
 
@@ -174,19 +182,51 @@ export default function App() {
   const [runLoading, setRunLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
+  const [loadedMemory, setLoadedMemory] = useState<LoadedMemoryState | null>(null);
+  const [memoryLoading, setMemoryLoading] = useState(false);
+  const [memorySaving, setMemorySaving] = useState(false);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
+  const [memoryFeedback, setMemoryFeedback] = useState<"saved" | "savedRefreshFailed" | "cancelled" | "discarded" | null>(null);
+  const activeMemorySaveSequence = useRef<number | null>(null);
   const runLoadSequence = useRef(0);
+  const memoryLoadSequence = useRef(0);
+  const memoryMutationSequence = useRef(0);
+  const scanSequence = useRef(0);
   const copy = messages[language];
+
+  function clearLoadedMemory() {
+    memoryLoadSequence.current += 1;
+    activeMemorySaveSequence.current = null;
+    setLoadedMemory(null);
+    setMemoryLoading(false);
+    setMemorySaving(false);
+    setMemoryError(null);
+    setMemoryFeedback(null);
+  }
+
+  function confirmUnsavedMemoryLoss(): boolean {
+    if (!loadedMemory || loadedMemory.draft === loadedMemory.document.content) return true;
+    return window.confirm(copy.inspector.discardUnsavedMemoryConfirm);
+  }
 
   function changeLanguage(nextLanguage: Language) {
     setLanguage(nextLanguage);
     persistLanguage(nextLanguage);
   }
 
-  async function performScan(loader: () => Promise<HarnessSnapshot | null>) {
+  async function performScan(
+    loader: () => Promise<HarnessSnapshot | null>,
+    unsavedConfirmed = false,
+  ) {
+    if (!unsavedConfirmed && !confirmUnsavedMemoryLoss()) return;
+    memoryMutationSequence.current += 1;
+    const operation = ++scanSequence.current;
+    clearLoadedMemory();
     setScanning(true);
     setError(null);
     try {
       const result = await loader();
+      if (operation !== scanSequence.current) return;
       if (!result) return;
       runLoadSequence.current += 1;
       setRuntimeSnapshot(null);
@@ -198,9 +238,11 @@ export default function App() {
       setMapFilter({});
       await performRuntimeScan();
     } catch (scanError) {
-      setError(scanError instanceof Error ? scanError.message : String(scanError));
+      if (operation === scanSequence.current) {
+        setError(scanError instanceof Error ? scanError.message : String(scanError));
+      }
     } finally {
-      setScanning(false);
+      if (operation === scanSequence.current) setScanning(false);
     }
   }
 
@@ -274,15 +316,36 @@ export default function App() {
       void performScan(rescanWorkspace);
       return;
     }
+    if (!confirmUnsavedMemoryLoss()) return;
     setSnapshot(sampleSnapshot);
     setSelectedArtifactId(null);
     setMapFilter({});
+    clearLoadedMemory();
     handleRefreshRuntime();
+  }
+
+  function handleSelectArtifact(id: string) {
+    if (id !== selectedArtifactId) {
+      if (!confirmUnsavedMemoryLoss()) return;
+      memoryMutationSequence.current += 1;
+      clearLoadedMemory();
+    }
+    setSelectedArtifactId(id);
   }
 
   useEffect(() => {
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
   }, [language]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!loadedMemory || loadedMemory.draft === loadedMemory.document.content) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [loadedMemory]);
 
   useEffect(() => {
     if (!tauri) return;
@@ -312,6 +375,139 @@ export default function App() {
     [snapshot, selectedArtifactId],
   );
 
+  const counterpartArtifact = useMemo<HarnessArtifact | null>(
+    () => selectedArtifact?.counterpartId
+      ? snapshot?.artifacts.find((item) => item.id === selectedArtifact.counterpartId) ?? null
+      : null,
+    [snapshot, selectedArtifact],
+  );
+
+  async function handleLoadMemory(reloading = false) {
+    if (!tauri || selectedArtifact?.kind !== "memory") return;
+    if (reloading && !confirmUnsavedMemoryLoss()) return;
+    if (reloading) memoryMutationSequence.current += 1;
+    const artifactId = selectedArtifact.id;
+    const sequence = ++memoryLoadSequence.current;
+    setMemoryLoading(true);
+    setMemoryError(null);
+    setMemoryFeedback(null);
+    try {
+      const document = await loadMemoryArtifact(artifactId);
+      if (sequence === memoryLoadSequence.current) {
+        setLoadedMemory({ document, draft: document.content });
+      }
+    } catch (loadError) {
+      if (sequence === memoryLoadSequence.current) {
+        setMemoryError(loadError instanceof Error ? loadError.message : String(loadError));
+      }
+    } finally {
+      if (sequence === memoryLoadSequence.current) setMemoryLoading(false);
+    }
+  }
+
+  function handleChangeMemoryDraft(content: string) {
+    setLoadedMemory((current) => current ? { ...current, draft: content } : current);
+    setMemoryError(null);
+    setMemoryFeedback(null);
+  }
+
+  function handleCancelMemoryChanges() {
+    setLoadedMemory((current) => current
+      ? { ...current, draft: current.document.content }
+      : current);
+    setMemoryError(null);
+    setMemoryFeedback("discarded");
+  }
+
+  async function handleSaveMemory() {
+    const memory = loadedMemory;
+    const editToken = memory?.document.editToken;
+    if (!tauri || !memory || !editToken) return;
+    const mutationSequence = ++memoryMutationSequence.current;
+    const artifactId = memory.document.artifactId;
+
+    setMemorySaving(true);
+    activeMemorySaveSequence.current = mutationSequence;
+    setMemoryError(null);
+    setMemoryFeedback(null);
+    try {
+      const result = await saveMemoryArtifact(editToken, memory.draft);
+      if (mutationSequence !== memoryMutationSequence.current) return;
+      if (!result.saved) {
+        setMemoryFeedback("cancelled");
+        return;
+      }
+
+      // The write is already committed. Do not let later navigation invalidate the
+      // local saved state while the best-effort rescan runs.
+      setLoadedMemory({
+        document: {
+          ...memory.document,
+          content: memory.draft,
+          contentHash: result.contentHash,
+          sizeBytes: result.sizeBytes,
+          editToken: null,
+        },
+        draft: memory.draft,
+      });
+      setMemoryFeedback("saved");
+
+      const refreshSequence = mutationSequence + 1;
+      memoryMutationSequence.current = refreshSequence;
+      const refreshScanOperation = ++scanSequence.current;
+      setScanning(true);
+      let nextSnapshot: HarnessSnapshot | null = null;
+      try {
+        nextSnapshot = await rescanWorkspace();
+      } catch {
+        if (refreshSequence === memoryMutationSequence.current) {
+          setMemoryError(null);
+          setMemoryFeedback("savedRefreshFailed");
+        }
+      } finally {
+        if (refreshScanOperation === scanSequence.current) setScanning(false);
+      }
+      if (!nextSnapshot || refreshSequence !== memoryMutationSequence.current) return;
+
+      setSnapshot(nextSnapshot);
+      setSelectedArtifactId(result.artifactId);
+      try {
+        const refreshedDocument = await loadMemoryArtifact(result.artifactId);
+        if (
+          refreshSequence !== memoryMutationSequence.current
+          || refreshedDocument.artifactId !== artifactId
+        ) return;
+        setLoadedMemory({ document: refreshedDocument, draft: refreshedDocument.content });
+        setMemoryFeedback("saved");
+      } catch {
+        if (refreshSequence === memoryMutationSequence.current) {
+          setMemoryError(null);
+          setMemoryFeedback("savedRefreshFailed");
+        }
+      }
+    } catch (saveError) {
+      if (mutationSequence !== memoryMutationSequence.current) return;
+      const structuredError = isMemorySaveError(saveError) ? saveError : null;
+      if (structuredError?.tokenConsumed) {
+        setLoadedMemory((current) => current
+          ? {
+              ...current,
+              document: { ...current.document, editToken: null },
+            }
+          : current);
+      }
+      setMemoryError(
+        structuredError?.message
+        ?? (saveError instanceof Error ? saveError.message : String(saveError)),
+      );
+    } finally {
+      if (activeMemorySaveSequence.current === mutationSequence) {
+        activeMemorySaveSequence.current = null;
+        setMemorySaving(false);
+      }
+    }
+  }
+
   const groupedArtifacts = selectedArtifact ? [] : filteredArtifacts;
   const visibleWarnings = snapshot?.warnings.filter(
     (warning) => !(
@@ -322,18 +518,28 @@ export default function App() {
 
   async function handleChooseWorkspace() {
     if (!tauri) return;
-    await performScan(() => chooseWorkspace(copy.workspace.chooseDialogTitle));
+    if (!confirmUnsavedMemoryLoss()) return;
+    await performScan(() => chooseWorkspace(copy.workspace.chooseDialogTitle), true);
   }
 
   function selectKind(kind: HarnessKind) {
+    if (!confirmUnsavedMemoryLoss()) return;
+    memoryMutationSequence.current += 1;
     setSection("items");
     setMode("list");
     setMapFilter({ kind });
     setSelectedArtifactId(null);
+    clearLoadedMemory();
   }
 
   const kinds = snapshot
     ? Array.from(new Set(snapshot.artifacts.map((artifact) => artifact.kind))).sort()
+    : [];
+
+  const scopes = snapshot
+    ? (["user", "repo", "nested", "worktree"] as HarnessScope[]).filter((scope) =>
+        snapshot.artifacts.some((artifact) => artifact.scope === scope),
+      )
     : [];
 
   return (
@@ -352,7 +558,14 @@ export default function App() {
                 key={item.id}
                 className={clsx(section === item.id && "active")}
                 aria-current={section === item.id ? "page" : undefined}
-                onClick={() => setSection(item.id)}
+                onClick={() => {
+                  if (item.id !== section && !confirmUnsavedMemoryLoss()) return;
+                  if (item.id !== "overview" && item.id !== "items") {
+                    memoryMutationSequence.current += 1;
+                    clearLoadedMemory();
+                  }
+                  setSection(item.id);
+                }}
               >
                 <Icon size={16} />
                 <span>{copy.nav[item.id]}</span>
@@ -413,15 +626,19 @@ export default function App() {
             </div>
             {snapshot ? (
               <button
-                className="secondary-button"
-                onClick={handleRescan}
-                disabled={scanning}
+              className="secondary-button"
+              onClick={handleRescan}
+              disabled={scanning || memorySaving}
               >
                 <RefreshCw size={15} className={scanning ? "spin" : undefined} />
                 {copy.workspace.rescan}
               </button>
             ) : null}
-            <button className="secondary-button" onClick={() => void handleChooseWorkspace()} disabled={!tauri}>
+            <button
+              className="secondary-button"
+              onClick={() => void handleChooseWorkspace()}
+              disabled={!tauri || scanning || memorySaving}
+            >
               <FolderOpen size={15} /> {copy.workspace.open}
             </button>
           </div>
@@ -473,7 +690,7 @@ export default function App() {
                   <p>{copy.overview.summary(
                     snapshot.artifacts.length,
                     new Set(snapshot.artifacts.map((item) => item.provider)).size,
-                    driftCount(snapshot.artifacts),
+                    counterpartDifferenceCount(snapshot),
                   )}</p>
                 </div>
                 <div className="scan-meta">
@@ -489,7 +706,7 @@ export default function App() {
                     return (
                       <button key={warning.id} onClick={() => {
                         const id = warning.artifactIds[0];
-                        if (id) setSelectedArtifactId(id);
+                        if (id) handleSelectArtifact(id);
                       }}>
                         {warning.severity === "warning" ? <AlertTriangle size={16} /> : <Info size={16} />}
                         <span><strong>{localizedWarning.title}</strong><small>{localizedWarning.detail}</small></span>
@@ -518,11 +735,42 @@ export default function App() {
                     </button>
                   </div>
                   <div className="toolbar-spacer" />
-                  {(mapFilter.provider || mapFilter.kind) ? (
-                    <button className="filter-chip" onClick={() => setMapFilter({})}>
+                  <label className="scope-filter">
+                    <span>{copy.explorer.scopeFilter}</span>
+                    <select
+                      aria-label={copy.explorer.scopeFilter}
+                      value={mapFilter.scope ?? ""}
+                      onChange={(event) => {
+                        const scope = event.target.value as HarnessScope | "";
+                        if (!confirmUnsavedMemoryLoss()) return;
+                        memoryMutationSequence.current += 1;
+                        setMapFilter((current) => ({
+                          ...current,
+                          scope: scope || undefined,
+                        }));
+                        setSelectedArtifactId(null);
+                        clearLoadedMemory();
+                      }}
+                    >
+                      <option value="">{copy.explorer.allScopes}</option>
+                      {scopes.map((scope) => (
+                        <option key={scope} value={scope}>{copy.labels.scope[scope]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {(mapFilter.provider || mapFilter.kind || mapFilter.scope) ? (
+                    <button className="filter-chip" onClick={() => {
+                      if (!confirmUnsavedMemoryLoss()) return;
+                      memoryMutationSequence.current += 1;
+                      setMapFilter({});
+                      setSelectedArtifactId(null);
+                      clearLoadedMemory();
+                    }}>
                       {mapFilter.provider ? copy.labels.provider[mapFilter.provider] : ""}
-                      {mapFilter.provider && mapFilter.kind ? " · " : ""}
+                      {mapFilter.provider && (mapFilter.kind || mapFilter.scope) ? " · " : ""}
                       {mapFilter.kind ? copy.labels.kind[mapFilter.kind] : ""}
+                      {mapFilter.kind && mapFilter.scope ? " · " : ""}
+                      {mapFilter.scope ? copy.labels.scope[mapFilter.scope] : ""}
                       <span>×</span>
                     </button>
                   ) : null}
@@ -537,13 +785,16 @@ export default function App() {
                   </label>
                 </div>
 
-                {mode === "map" && !search && !mapFilter.provider && !mapFilter.kind ? (
+                {mode === "map" && !search && !mapFilter.provider && !mapFilter.kind && !mapFilter.scope ? (
                   <HarnessMap
                     snapshot={snapshot}
                     language={language}
                     onFilter={(filter) => {
+                      if (!confirmUnsavedMemoryLoss()) return;
+                      memoryMutationSequence.current += 1;
                       setMapFilter(filter);
                       setSelectedArtifactId(null);
+                      clearLoadedMemory();
                     }}
                   />
                 ) : (
@@ -552,7 +803,7 @@ export default function App() {
                     language={language}
                     workspacePath={snapshot.workspacePath}
                     selectedId={selectedArtifactId}
-                    onSelect={setSelectedArtifactId}
+                    onSelect={handleSelectArtifact}
                   />
                 )}
               </section>
@@ -564,15 +815,34 @@ export default function App() {
       {section === "overview" || section === "items" ? (
         <Inspector
           artifact={selectedArtifact}
+          counterpart={counterpartArtifact}
           language={language}
           workspacePath={snapshot?.workspacePath ?? null}
           groupedArtifacts={groupedArtifacts.length === snapshot?.artifacts.length ? [] : groupedArtifacts}
-          onSelect={setSelectedArtifactId}
+          loadedMemory={loadedMemory}
+          memoryLoading={memoryLoading}
+          memorySaving={memorySaving}
+          memoryError={memoryError}
+          memoryFeedback={memoryFeedback}
+          canLoadMemory={tauri}
+          onSelect={handleSelectArtifact}
           onOpenSource={(path) => {
             if (tauri) void revealSource(path);
           }}
+          onLoadMemory={() => void handleLoadMemory()}
+          onReloadMemory={() => void handleLoadMemory(true)}
+          onChangeMemoryDraft={handleChangeMemoryDraft}
+          onCancelMemoryChanges={handleCancelMemoryChanges}
+          onSaveMemory={() => void handleSaveMemory()}
         />
       ) : null}
     </div>
   );
+}
+
+function isMemorySaveError(value: unknown): value is MemorySaveError {
+  return typeof value === "object"
+    && value !== null
+    && typeof (value as { message?: unknown }).message === "string"
+    && typeof (value as { tokenConsumed?: unknown }).tokenConsumed === "boolean";
 }

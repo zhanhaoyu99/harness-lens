@@ -38,7 +38,7 @@
       "icons/icon.ico"
     ],
     "shortDescription": "Local-first Agent Harness DevTools",
-    "longDescription": "Inspect Agent Harness definitions and read-only Codex runtime metadata locally.",
+    "longDescription": "Inspect Agent Harness definitions, Memory, and read-only Codex runtime metadata locally.",
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": "-"

@@ -15,6 +15,6 @@ describe("share snapshot", () => {
     const stats = shareStats(sampleSnapshot);
 
     expect(stats.resolved).toBe(4);
-    expect(stats.driftedItems).toBe(2);
+    expect(stats.differenceGroups).toBe(1);
   });
 });

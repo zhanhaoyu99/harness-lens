@@ -2,7 +2,7 @@
   "name": "harness-lens",
   "private": true,
   "version": "0.1.1",
-  "description": "Local-first Agent Harness DevTools for definitions, resolution, and read-only runtime evidence.",
+  "description": "Local-first Agent Harness DevTools for definitions, resolution, Memory, and read-only runtime evidence.",
   "license": "MIT",
   "author": "Zane",
   "repository": {

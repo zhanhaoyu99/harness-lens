@@ -1,10 +1,10 @@
-import { driftCount, effectiveCount } from "./artifacts";
+import { counterpartDifferenceCount, effectiveCount } from "./artifacts";
 import { messages, type Language } from "./i18n";
 import type { HarnessKind, HarnessSnapshot } from "../types";
 
 export interface ShareStats {
   resolved: number;
-  driftedItems: number;
+  differenceGroups: number;
   duplicateGroups: number;
   unknown: number;
   byKind: Array<{ kind: HarnessKind; count: number }>;
@@ -20,7 +20,7 @@ export function shareStats(snapshot: HarnessSnapshot): ShareStats {
 
   return {
     resolved: effectiveCount(snapshot.artifacts),
-    driftedItems: driftCount(snapshot.artifacts),
+    differenceGroups: counterpartDifferenceCount(snapshot),
     duplicateGroups: duplicateGroups.size,
     unknown: snapshot.artifacts.filter((item) => item.resolution === "unknown").length,
     byKind: Array.from(kindCounts, ([kind, count]) => ({ kind, count })).sort(
@@ -45,7 +45,7 @@ export function buildShareSummary(
     "",
     `${share.inventory}: ${snapshot.artifacts.length}`,
     `${share.resolved}: ${stats.resolved}`,
-    `${share.drift}: ${stats.driftedItems}`,
+    `${share.drift}: ${stats.differenceGroups}`,
     `${share.duplicates}: ${stats.duplicateGroups}`,
     `${share.unknown}: ${stats.unknown}`,
     "",

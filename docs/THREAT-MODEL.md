@@ -39,6 +39,8 @@ User-level Harness files and the locally installed Codex binary are trusted more
 | Runtime response contains private run data | Read-only methods, per-thread opt-in, metadata allowlist, no raw response persistence | Adapter defects or schema drift could expose an unexpected field |
 | Frontend invokes an unintended native command | Explicit Tauri command manifest/capability and runtime allowlist | Future commands can expand authority if review is weak |
 | Malicious path is opened | Only artifacts from the current scan can be opened | Same-user time-of-check/time-of-use replacement remains possible |
+| A Memory edit overwrites the wrong or newer file | Artifact-ID allowlist, short-lived revision-bound edit token, unsupported ownership/link/permission cases made view-only, explicit native confirmation, conflict detection, and same-directory atomic replacement | A malicious process already running as the same user remains outside the isolation boundary; macOS ACLs and extended attributes are not preserved by the current editor |
+| Raw Memory text leaks through a normal snapshot or Share | Memory is metadata-only in normal scans and loaded only on explicit request into transient editor state | The user can still copy or screenshot sensitive editor text |
 | Shared report leaks content | v0.1 Share output is aggregate-only; absolute paths and content excluded | Screenshots and manual copying remain outside the export boundary |
 | Activity is mistaken for success | Four-stage model; run completion is not evaluation | UI wording regressions can reintroduce misleading claims |
 | Compromised dependency or build | Lockfiles, CI, Dependabot, checksums | v0.1 artifacts are not notarized and the build is not yet reproducible |
@@ -61,7 +63,7 @@ Codex App Server is experimental. Unknown schema values should remain unknown or
 Any change that adds a scan location, Tauri command, runtime method, persisted field, network request, or export format must answer:
 
 1. What new data or authority crosses a trust boundary?
-2. Is the operation read-only and strictly scoped?
+2. Is the operation read-only? If not, is it limited to the documented Memory edit allowlist, explicitly confirmed, conflict-checked, and strictly scoped?
 3. What size, time, path, and schema bounds apply?
 4. Which fields reach the frontend, logs, disk, clipboard, or network?
 5. How can a test prove that secrets and unsupported states fail closed?

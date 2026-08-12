@@ -1,3 +1,4 @@
+mod memory_edit;
 pub mod model;
 mod redaction;
 pub mod runtime;
@@ -9,21 +10,29 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
     sync::Mutex,
-    time::SystemTime,
+    time::{Duration, Instant, SystemTime},
 };
 
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 
-use model::HarnessSnapshot;
+use memory_edit::{
+    load_memory_file, memory_editability, replace_memory_file, validate_memory_content,
+    verify_memory_revision,
+};
+use model::{HarnessKind, HarnessSnapshot};
 use runtime::{CodexRunDetail, CodexRuntimeSnapshot};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, State};
-use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_opener::OpenerExt;
+use uuid::Uuid;
+
+const MEMORY_EDIT_SESSION_TTL: Duration = Duration::from_secs(10 * 60);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct FileIdentity {
+pub(crate) struct FileIdentity {
     len: u64,
     modified: Option<SystemTime>,
     content_hash: String,
@@ -35,6 +44,75 @@ struct FileIdentity {
 
 #[derive(Default)]
 struct ScannedArtifactPaths(Mutex<HashMap<PathBuf, FileIdentity>>);
+
+#[derive(Clone, Debug)]
+struct MemoryAuthorization {
+    artifact_id: String,
+    path: PathBuf,
+    display_path: String,
+    identity: FileIdentity,
+    editable: bool,
+    editability_reason: Option<String>,
+}
+
+#[derive(Default)]
+struct ScannedMemoryArtifacts(Mutex<HashMap<String, MemoryAuthorization>>);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct MemoryEditSession {
+    artifact_id: String,
+    path: PathBuf,
+    display_path: String,
+    expected_identity: FileIdentity,
+    issued_at: Instant,
+}
+
+#[derive(Default)]
+struct MemoryEditSessions(Mutex<HashMap<String, MemoryEditSession>>);
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemoryDocumentDto {
+    artifact_id: String,
+    edit_token: Option<String>,
+    content: String,
+    content_hash: String,
+    size_bytes: u64,
+    editable: bool,
+    editability_reason: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemorySaveResultDto {
+    artifact_id: String,
+    saved: bool,
+    content_hash: String,
+    size_bytes: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemorySaveErrorDto {
+    message: String,
+    token_consumed: bool,
+}
+
+impl MemorySaveErrorDto {
+    fn token_retained(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            token_consumed: false,
+        }
+    }
+
+    fn token_consumed(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            token_consumed: true,
+        }
+    }
+}
 
 #[derive(Default)]
 struct ScannedRuntimeThreads(Mutex<HashSet<String>>);
@@ -87,9 +165,38 @@ fn file_identity(path: &Path, known_hash: Option<String>) -> Result<FileIdentity
     })
 }
 
+fn safe_dialog_path(path: &str) -> String {
+    const MAX_CHARS: usize = 240;
+    let sanitized = path
+        .chars()
+        .map(|character| {
+            let bidi_control = matches!(
+                character,
+                '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}'
+            );
+            if character.is_control() || bidi_control {
+                '\u{fffd}'
+            } else {
+                character
+            }
+        })
+        .collect::<Vec<_>>();
+    if sanitized.len() <= MAX_CHARS {
+        return sanitized.into_iter().collect();
+    }
+    let head = sanitized.iter().take(130).copied();
+    let tail = sanitized
+        .iter()
+        .skip(sanitized.len().saturating_sub(90))
+        .copied();
+    head.chain(['…']).chain(tail).collect()
+}
+
 fn scan_authorized_workspace(
     workspace: PathBuf,
     scanned_paths: &ScannedArtifactPaths,
+    scanned_memories: &ScannedMemoryArtifacts,
+    memory_edit_sessions: &MemoryEditSessions,
     runtime_threads: &ScannedRuntimeThreads,
     current_workspace: &CurrentWorkspace,
 ) -> Result<HarnessSnapshot, String> {
@@ -99,7 +206,7 @@ fn scan_authorized_workspace(
     let home =
         dirs::home_dir().ok_or_else(|| "Unable to locate the user home directory.".to_string())?;
     let snapshot = scanner::scan(&workspace, &home)?;
-    let paths = snapshot
+    let paths: HashMap<PathBuf, FileIdentity> = snapshot
         .artifacts
         .iter()
         .filter_map(|artifact| {
@@ -108,10 +215,42 @@ fn scan_authorized_workspace(
             Some((path, identity))
         })
         .collect();
+    let memories = snapshot
+        .artifacts
+        .iter()
+        .filter(|artifact| artifact.kind == HarnessKind::Memory)
+        .filter_map(|artifact| {
+            let path = Path::new(&artifact.path).canonicalize().ok()?;
+            let identity = paths.get(&path)?.clone();
+            let (policy_editable, policy_reason) = memory_editability(&path);
+            let editable = artifact.editable && policy_editable;
+            let editability_reason = artifact.editability_reason.clone().or(policy_reason);
+            Some((
+                artifact.id.clone(),
+                MemoryAuthorization {
+                    artifact_id: artifact.id.clone(),
+                    path,
+                    display_path: safe_dialog_path(&artifact.relative_path),
+                    identity,
+                    editable,
+                    editability_reason,
+                },
+            ))
+        })
+        .collect();
     *scanned_paths
         .0
         .lock()
         .map_err(|_| "Unable to update the scanned artifact allowlist.".to_string())? = paths;
+    *scanned_memories
+        .0
+        .lock()
+        .map_err(|_| "Unable to update the scanned memory allowlist.".to_string())? = memories;
+    memory_edit_sessions
+        .0
+        .lock()
+        .map_err(|_| "Unable to reset memory edit sessions.".to_string())?
+        .clear();
     runtime_threads
         .0
         .lock()
@@ -129,6 +268,8 @@ async fn choose_workspace(
     app: AppHandle,
     title: String,
     scanned_paths: State<'_, ScannedArtifactPaths>,
+    scanned_memories: State<'_, ScannedMemoryArtifacts>,
+    memory_edit_sessions: State<'_, MemoryEditSessions>,
     runtime_threads: State<'_, ScannedRuntimeThreads>,
     current_workspace: State<'_, CurrentWorkspace>,
 ) -> Result<Option<HarnessSnapshot>, String> {
@@ -141,6 +282,8 @@ async fn choose_workspace(
     scan_authorized_workspace(
         workspace,
         &scanned_paths,
+        &scanned_memories,
+        &memory_edit_sessions,
         &runtime_threads,
         &current_workspace,
     )
@@ -150,6 +293,8 @@ async fn choose_workspace(
 #[tauri::command]
 fn load_default_workspace(
     scanned_paths: State<'_, ScannedArtifactPaths>,
+    scanned_memories: State<'_, ScannedMemoryArtifacts>,
+    memory_edit_sessions: State<'_, MemoryEditSessions>,
     runtime_threads: State<'_, ScannedRuntimeThreads>,
     current_workspace: State<'_, CurrentWorkspace>,
 ) -> Result<Option<HarnessSnapshot>, String> {
@@ -159,6 +304,8 @@ fn load_default_workspace(
     scan_authorized_workspace(
         workspace,
         &scanned_paths,
+        &scanned_memories,
+        &memory_edit_sessions,
         &runtime_threads,
         &current_workspace,
     )
@@ -168,6 +315,8 @@ fn load_default_workspace(
 #[tauri::command]
 fn rescan_workspace(
     scanned_paths: State<'_, ScannedArtifactPaths>,
+    scanned_memories: State<'_, ScannedMemoryArtifacts>,
+    memory_edit_sessions: State<'_, MemoryEditSessions>,
     runtime_threads: State<'_, ScannedRuntimeThreads>,
     current_workspace: State<'_, CurrentWorkspace>,
 ) -> Result<HarnessSnapshot, String> {
@@ -180,6 +329,8 @@ fn rescan_workspace(
     scan_authorized_workspace(
         workspace,
         &scanned_paths,
+        &scanned_memories,
+        &memory_edit_sessions,
         &runtime_threads,
         &current_workspace,
     )
@@ -222,6 +373,249 @@ fn load_runtime_run(
     runtime::load_run(&thread_id)
 }
 
+fn authorized_memory(
+    artifact_id: &str,
+    scanned_memories: &ScannedMemoryArtifacts,
+) -> Result<MemoryAuthorization, String> {
+    scanned_memories
+        .0
+        .lock()
+        .map_err(|_| "Unable to read the scanned memory allowlist.".to_string())?
+        .get(artifact_id)
+        .cloned()
+        .ok_or_else(|| {
+            "The item is not a Memory artifact in the current scanned snapshot.".to_string()
+        })
+}
+
+fn active_memory_edit_session(
+    edit_token: &str,
+    memory_edit_sessions: &MemoryEditSessions,
+) -> Result<MemoryEditSession, (String, bool)> {
+    let mut sessions = memory_edit_sessions
+        .0
+        .lock()
+        .map_err(|_| ("Unable to read memory edit sessions.".to_string(), false))?;
+    let Some(session) = sessions.get(edit_token).cloned() else {
+        return Err((
+            "The memory edit session is invalid or has already been used.".to_string(),
+            true,
+        ));
+    };
+    if session.issued_at.elapsed() > MEMORY_EDIT_SESSION_TTL {
+        sessions.remove(edit_token);
+        return Err((
+            "The memory edit session expired. Reload the file before saving.".to_string(),
+            true,
+        ));
+    }
+    Ok(session)
+}
+
+fn consume_memory_edit_session(
+    edit_token: &str,
+    expected_session: &MemoryEditSession,
+    memory_edit_sessions: &MemoryEditSessions,
+) -> Result<MemoryEditSession, String> {
+    let mut sessions = memory_edit_sessions
+        .0
+        .lock()
+        .map_err(|_| "Unable to update memory edit sessions.".to_string())?;
+    let Some(current_session) = sessions.get(edit_token) else {
+        return Err("The memory edit session is invalid or has already been used.".to_string());
+    };
+    if current_session.issued_at.elapsed() > MEMORY_EDIT_SESSION_TTL {
+        sessions.remove(edit_token);
+        return Err("The memory edit session expired. Reload the file before saving.".to_string());
+    }
+    if current_session != expected_session {
+        return Err("The memory edit session changed. Reload the file before saving.".to_string());
+    }
+    sessions
+        .remove(edit_token)
+        .ok_or_else(|| "The memory edit session could not be consumed.".to_string())
+}
+
+#[tauri::command]
+fn load_memory_artifact(
+    artifact_id: String,
+    scanned_memories: State<'_, ScannedMemoryArtifacts>,
+    memory_edit_sessions: State<'_, MemoryEditSessions>,
+) -> Result<MemoryDocumentDto, String> {
+    let authorization = authorized_memory(&artifact_id, &scanned_memories)?;
+    let loaded = load_memory_file(&authorization.path, &authorization.identity)?;
+    let editable = authorization.editable && loaded.safe_to_edit;
+    let editability_reason = if editable {
+        None
+    } else {
+        authorization
+            .editability_reason
+            .clone()
+            .or(loaded.unsafe_reason.clone())
+            .or_else(|| Some("This memory file is view-only.".to_string()))
+    };
+    let edit_token = if editable {
+        let token = Uuid::new_v4().simple().to_string();
+        let session = MemoryEditSession {
+            artifact_id: authorization.artifact_id.clone(),
+            path: authorization.path,
+            display_path: authorization.display_path,
+            expected_identity: loaded.identity.clone(),
+            issued_at: Instant::now(),
+        };
+        let mut sessions = memory_edit_sessions
+            .0
+            .lock()
+            .map_err(|_| "Unable to create a memory edit session.".to_string())?;
+        sessions.retain(|_, existing| {
+            existing.issued_at.elapsed() <= MEMORY_EDIT_SESSION_TTL
+                && existing.artifact_id != artifact_id
+        });
+        sessions.insert(token.clone(), session);
+        Some(token)
+    } else {
+        None
+    };
+
+    Ok(MemoryDocumentDto {
+        artifact_id,
+        edit_token,
+        content: loaded.content,
+        content_hash: loaded.identity.content_hash,
+        size_bytes: loaded.identity.len,
+        editable,
+        editability_reason,
+    })
+}
+
+#[tauri::command]
+async fn save_memory_artifact(
+    edit_token: String,
+    content: String,
+    app: AppHandle,
+    scanned_paths: State<'_, ScannedArtifactPaths>,
+    scanned_memories: State<'_, ScannedMemoryArtifacts>,
+    memory_edit_sessions: State<'_, MemoryEditSessions>,
+) -> Result<MemorySaveResultDto, MemorySaveErrorDto> {
+    let session = active_memory_edit_session(&edit_token, &memory_edit_sessions).map_err(
+        |(message, token_consumed)| {
+            if token_consumed {
+                MemorySaveErrorDto::token_consumed(message)
+            } else {
+                MemorySaveErrorDto::token_retained(message)
+            }
+        },
+    )?;
+    validate_memory_content(&content).map_err(MemorySaveErrorDto::token_retained)?;
+
+    let authorization = authorized_memory(&session.artifact_id, &scanned_memories)
+        .map_err(MemorySaveErrorDto::token_retained)?;
+    if authorization.path != session.path || authorization.identity != session.expected_identity {
+        return Err(MemorySaveErrorDto::token_retained(
+            "The scanned memory authorization changed. Reload before saving.",
+        ));
+    }
+    if !authorization.editable {
+        return Err(MemorySaveErrorDto::token_retained(
+            authorization
+                .editability_reason
+                .unwrap_or_else(|| "This memory file is view-only.".to_string()),
+        ));
+    }
+    verify_memory_revision(&session.path, &session.expected_identity)
+        .map_err(MemorySaveErrorDto::token_retained)?;
+
+    let display_path = session.display_path.clone();
+    let confirm_app = app.clone();
+    let confirmed = tauri::async_runtime::spawn_blocking(move || {
+        confirm_app
+            .dialog()
+            .message(format!(
+                "保存对这个记忆文件的修改？\n{display_path}\n\nSave changes to this Memory file?\n{display_path}"
+            ))
+            .title("保存记忆修改 / Save memory changes")
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "保存 / Save".to_string(),
+                "取消 / Cancel".to_string(),
+            ))
+            .blocking_show()
+    })
+    .await
+    .map_err(|error| {
+        MemorySaveErrorDto::token_retained(format!(
+            "Unable to show the save confirmation: {error}"
+        ))
+    })?;
+    if !confirmed {
+        return Ok(MemorySaveResultDto {
+            artifact_id: session.artifact_id.clone(),
+            saved: false,
+            content_hash: session.expected_identity.content_hash.clone(),
+            size_bytes: session.expected_identity.len,
+        });
+    }
+
+    // Revalidate the allowlist and on-disk revision after the user confirmation.
+    let authorization = authorized_memory(&session.artifact_id, &scanned_memories)
+        .map_err(MemorySaveErrorDto::token_retained)?;
+    if authorization.path != session.path || authorization.identity != session.expected_identity {
+        return Err(MemorySaveErrorDto::token_retained(
+            "The scanned memory authorization changed. Reload before saving.",
+        ));
+    }
+    verify_memory_revision(&session.path, &session.expected_identity)
+        .map_err(MemorySaveErrorDto::token_retained)?;
+
+    // Consuming the token is the write boundary. A cancelled confirmation leaves it intact;
+    // after this point every outcome requires a reload before another write attempt.
+    let session = consume_memory_edit_session(&edit_token, &session, &memory_edit_sessions)
+        .map_err(MemorySaveErrorDto::token_consumed)?;
+
+    // Resolve every fallible bookkeeping step before the atomic replacement. Keeping both
+    // guards prevents a concurrent rescan and makes the allowlist updates infallible after a
+    // successful commit, so an on-disk save is never reported as a failure.
+    let mut scanned_paths = scanned_paths.0.lock().map_err(|_| {
+        MemorySaveErrorDto::token_consumed("Unable to update the scanned artifact allowlist.")
+    })?;
+    let mut scanned_memories = scanned_memories.0.lock().map_err(|_| {
+        MemorySaveErrorDto::token_consumed("Unable to update the scanned memory allowlist.")
+    })?;
+    let scanned_path_identity = scanned_paths.get(&session.path).ok_or_else(|| {
+        MemorySaveErrorDto::token_consumed("The memory path is no longer in the current scan.")
+    })?;
+    if scanned_path_identity != &session.expected_identity {
+        return Err(MemorySaveErrorDto::token_consumed(
+            "The scanned memory authorization changed. Reload before saving.",
+        ));
+    }
+    let saved_authorization = scanned_memories
+        .get_mut(&session.artifact_id)
+        .ok_or_else(|| {
+            MemorySaveErrorDto::token_consumed(
+                "The memory authorization changed. Reload before saving.",
+            )
+        })?;
+    if saved_authorization.path != session.path
+        || saved_authorization.identity != session.expected_identity
+    {
+        return Err(MemorySaveErrorDto::token_consumed(
+            "The scanned memory authorization changed. Reload before saving.",
+        ));
+    }
+
+    let saved_identity = replace_memory_file(&session.path, &session.expected_identity, &content)
+        .map_err(MemorySaveErrorDto::token_consumed)?;
+    scanned_paths.insert(session.path.clone(), saved_identity.clone());
+    saved_authorization.identity = saved_identity.clone();
+
+    Ok(MemorySaveResultDto {
+        artifact_id: session.artifact_id,
+        saved: true,
+        content_hash: saved_identity.content_hash,
+        size_bytes: saved_identity.len,
+    })
+}
+
 #[tauri::command]
 fn open_artifact(
     app: AppHandle,
@@ -253,6 +647,8 @@ fn open_artifact(
 pub fn run() {
     tauri::Builder::default()
         .manage(ScannedArtifactPaths::default())
+        .manage(ScannedMemoryArtifacts::default())
+        .manage(MemoryEditSessions::default())
         .manage(ScannedRuntimeThreads::default())
         .manage(CurrentWorkspace::default())
         .plugin(tauri_plugin_dialog::init())
@@ -263,6 +659,8 @@ pub fn run() {
             rescan_workspace,
             inspect_runtime,
             load_runtime_run,
+            load_memory_artifact,
+            save_memory_artifact,
             open_artifact
         ])
         .run(tauri::generate_context!())
@@ -271,9 +669,13 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, path::PathBuf, time::Instant};
 
-    use super::file_identity;
+    use super::{
+        active_memory_edit_session, authorized_memory, consume_memory_edit_session, file_identity,
+        safe_dialog_path, FileIdentity, MemoryEditSession, MemoryEditSessions,
+        ScannedMemoryArtifacts,
+    };
 
     #[test]
     fn file_identity_detects_same_length_content_replacement() {
@@ -287,5 +689,116 @@ mod tests {
 
         assert_ne!(before.content_hash, after.content_hash);
         assert_ne!(before, after);
+    }
+
+    #[test]
+    fn memory_load_rejects_artifacts_outside_the_current_scan() {
+        let scanned_memories = ScannedMemoryArtifacts::default();
+
+        assert!(authorized_memory("not-scanned", &scanned_memories)
+            .expect_err("unscanned artifact must be rejected")
+            .contains("current scanned snapshot"));
+    }
+
+    #[test]
+    fn dialog_paths_strip_control_characters_and_bound_length() {
+        let unsafe_path = format!("./unsafe\n\u{202e}{}.md", "x".repeat(300));
+
+        let safe_path = safe_dialog_path(&unsafe_path);
+
+        assert!(!safe_path.contains('\n'));
+        assert!(!safe_path.contains('\u{202e}'));
+        assert!(safe_path.contains('…'));
+        assert!(safe_path.chars().count() <= 221);
+    }
+
+    #[test]
+    fn confirmation_cancel_keeps_the_edit_token_available_for_retry() {
+        let sessions = MemoryEditSessions::default();
+        let token = "retry-token";
+        let session = memory_session_fixture();
+        sessions
+            .0
+            .lock()
+            .expect("edit sessions")
+            .insert(token.to_string(), session.clone());
+
+        let confirmation_session =
+            active_memory_edit_session(token, &sessions).expect("confirmation lookup");
+        assert_eq!(confirmation_session, session);
+
+        // A cancelled dialog deliberately does not call consume_memory_edit_session.
+        let retry_session =
+            active_memory_edit_session(token, &sessions).expect("retry lookup after cancel");
+        assert_eq!(retry_session, session);
+    }
+
+    #[test]
+    fn missing_edit_token_requires_a_reload() {
+        let sessions = MemoryEditSessions::default();
+
+        let (message, token_consumed) = active_memory_edit_session("missing", &sessions)
+            .expect_err("missing token must be rejected");
+
+        assert!(message.contains("invalid"));
+        assert!(token_consumed);
+    }
+
+    #[test]
+    fn confirmed_write_consumes_the_edit_token_once() {
+        let sessions = MemoryEditSessions::default();
+        let token = "single-use-token";
+        let session = memory_session_fixture();
+        sessions
+            .0
+            .lock()
+            .expect("edit sessions")
+            .insert(token.to_string(), session.clone());
+
+        let consumed =
+            consume_memory_edit_session(token, &session, &sessions).expect("first confirmed write");
+        assert_eq!(consumed, session);
+        assert!(consume_memory_edit_session(token, &session, &sessions)
+            .expect_err("second confirmed write must fail")
+            .contains("already been used"));
+    }
+
+    #[test]
+    fn memory_save_errors_serialize_token_consumption_state() {
+        let retained = super::MemorySaveErrorDto::token_retained("retryable");
+        let consumed = super::MemorySaveErrorDto::token_consumed("reload required");
+
+        assert_eq!(
+            serde_json::to_value(retained).expect("retained error JSON"),
+            serde_json::json!({
+                "message": "retryable",
+                "tokenConsumed": false
+            })
+        );
+        assert_eq!(
+            serde_json::to_value(consumed).expect("consumed error JSON"),
+            serde_json::json!({
+                "message": "reload required",
+                "tokenConsumed": true
+            })
+        );
+    }
+
+    fn memory_session_fixture() -> MemoryEditSession {
+        MemoryEditSession {
+            artifact_id: "memory-artifact".to_string(),
+            path: PathBuf::from("/tmp/MEMORY.md"),
+            display_path: "./MEMORY.md".to_string(),
+            expected_identity: FileIdentity {
+                len: 6,
+                modified: None,
+                content_hash: "fixture-hash".to_string(),
+                #[cfg(unix)]
+                device: 1,
+                #[cfg(unix)]
+                inode: 2,
+            },
+            issued_at: Instant::now(),
+        }
     }
 }

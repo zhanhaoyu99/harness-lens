@@ -3,6 +3,8 @@ import type {
   CodexRunDetail,
   CodexRuntimeSnapshot,
   HarnessSnapshot,
+  MemoryArtifactDocument,
+  MemorySaveResult,
 } from "../types";
 
 export function isTauriRuntime(): boolean {
@@ -23,6 +25,19 @@ export async function loadDefaultWorkspace(): Promise<HarnessSnapshot | null> {
 
 export async function revealSource(path: string): Promise<void> {
   await invoke("open_artifact", { path });
+}
+
+export async function loadMemoryArtifact(
+  artifactId: string,
+): Promise<MemoryArtifactDocument> {
+  return invoke<MemoryArtifactDocument>("load_memory_artifact", { artifactId });
+}
+
+export async function saveMemoryArtifact(
+  editToken: string,
+  content: string,
+): Promise<MemorySaveResult> {
+  return invoke<MemorySaveResult>("save_memory_artifact", { editToken, content });
 }
 
 export async function inspectRuntime(): Promise<CodexRuntimeSnapshot> {

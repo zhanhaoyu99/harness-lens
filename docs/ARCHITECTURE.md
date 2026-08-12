@@ -55,11 +55,14 @@ Claude and other runtimes get separate adapters. Shared UI depends only on norma
 ## Security and privacy
 
 - All scanning is opt-in through a chosen workspace plus documented user-level Harness locations.
-- The MVP is read-only.
+- Repository discovery follows only the ancestor chain from the selected Git root to the selected workspace. This makes nested-project scope visible without scanning unrelated sibling projects.
+- The app is read-only by default. A separate narrow command path can load an already-scanned Memory file on demand and save only eligible existing Markdown files after confirmation and revision checks.
 - Files are size-limited before loading.
 - Sensitive patterns are redacted on a best-effort basis before entering UI previews.
 - Claude project memory is filtered to the selected workspace rather than scanning unrelated projects.
 - Opening a source file goes through a backend allowlist populated by the current scan.
+- Memory text is excluded from the regular snapshot and Share model. An explicit load uses an artifact identifier rather than a frontend-supplied path; an edit token binds a save to the scanned file revision.
+- Memory saves reject stale revisions, symbolic-link or multiply hard-linked sources, files owned by another user, special permission bits, byte-order marks or non-LF line endings, and unsupported formats; use a same-directory atomic replacement; and never provide create, rename, delete, force-save, backup, or autosave operations.
 - Session content and evidence are read only when the user opens a specific run.
 - Runtime normalization keeps allowlisted metadata and excludes raw prompts, reasoning, tool arguments and diffs.
 - The current Share snapshot contains aggregate counts only; it excludes content and absolute paths.

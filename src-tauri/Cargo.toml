@@ -26,13 +26,13 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 dirs = "6"
 hex = "0.4"
 regex = "1"
+rustix = { version = "1", features = ["process"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
-walkdir = "2"
-
-[dev-dependencies]
 tempfile = "3"
+uuid = { version = "1", features = ["v4"] }
+walkdir = "2"

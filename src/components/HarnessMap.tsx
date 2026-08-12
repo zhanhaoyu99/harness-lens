@@ -11,16 +11,19 @@ import {
   type Node,
 } from "@xyflow/react";
 import { messages, type Language } from "../lib/i18n";
+import { counterpartDifferenceCount } from "../lib/artifacts";
 import type {
   HarnessArtifact,
   HarnessKind,
   HarnessProvider,
+  HarnessScope,
   HarnessSnapshot,
 } from "../types";
 
 export interface MapFilter {
   provider?: HarnessProvider;
   kind?: HarnessKind;
+  scope?: HarnessScope;
 }
 
 interface HarnessMapProps {
@@ -101,7 +104,7 @@ export function HarnessMap({ snapshot, language, onFilter }: HarnessMapProps) {
       const providerArtifacts = groups[provider];
       const providerNodeId = `provider:${provider}`;
       const providerY = providerIndex * 210 + 24;
-      const driftCount = providerArtifacts.filter((item) => item.counterpartId !== null).length;
+      const differenceCount = counterpartDifferenceCount(snapshot, provider);
       nextNodes.push({
         id: providerNodeId,
         position: { x: 300, y: providerY },
@@ -113,7 +116,7 @@ export function HarnessMap({ snapshot, language, onFilter }: HarnessMapProps) {
           label: label(
             copy.labels.provider[provider],
             copy.map.discovered(providerArtifacts.length),
-            driftCount ? copy.map.drift(driftCount) : undefined,
+            differenceCount ? copy.map.drift(differenceCount) : undefined,
           ),
         },
         style: nodeStyle("provider"),

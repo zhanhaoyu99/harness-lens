@@ -1431,6 +1431,7 @@ dependencies = [
  "dirs",
  "hex",
  "regex",
+ "rustix",
  "serde",
  "serde_json",
  "sha2",
@@ -1439,6 +1440,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
  "tempfile",
+ "uuid",
  "walkdir",
 ]
 

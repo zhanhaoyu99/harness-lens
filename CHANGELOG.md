@@ -4,6 +4,15 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 ## [Unreleased]
 
+### Added
+
+- On-demand Memory viewing and explicit editing for eligible existing Markdown files, with revision conflict detection and native confirmation.
+- Project and nested-project Harness discovery along the selected workspace chain.
+
+### Changed
+
+- Reframed provider comparison diagnostics as “same name, different content” instead of a resolution status, and stopped comparing entries across different scopes.
+
 ### Planned
 
 - Immutable context snapshots bound to runs.

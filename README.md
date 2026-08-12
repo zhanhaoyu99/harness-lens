@@ -4,14 +4,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#install)
 
-**A local-first, read-only control plane for understanding your AI coding-agent Harness.**
+**A local-first control plane for understanding your AI coding-agent Harness.**
 
 Harness Lens helps answer two deceptively hard questions:
 
 1. What rules, skills, hooks, agents, config, and memory can affect this workspace?
 2. What path did a real Codex run take?
 
-It scans local Codex and Claude Harness sources, explains their origin and resolution, and can connect to the experimental Codex App Server as a metadata-only “flight recorder.” It does not execute agents, change your Harness, or upload scanned content to a Harness Lens service.
+It scans local Codex and Claude Harness sources, explains their origin and resolution, and can connect to the experimental Codex App Server as a metadata-only “flight recorder.” It does not execute agents or upload scanned content to a Harness Lens service. Harness sources remain read-only except for an explicit, confirmed edit of an existing recognized Memory Markdown file.
 
 [简体中文](README.zh-CN.md)
 
@@ -40,11 +40,13 @@ All screenshots below use synthetic data. The browser demo cannot read local fil
 
 ![Read-only Codex Run Flight Recorder with a linear turn and evidence replay](docs/assets/runs.png)
 
-## What works in v0.1
+## What works today
 
 - Scan a selected workspace plus known user-level Codex and Claude Harness locations.
+- Distinguish user-global, project, nested-project, and project-bound sources; nested workspaces are scanned along their repository-to-workspace chain.
 - Browse instructions, rules, skills, hooks, agents, config, memory, and workflows in Map or List form.
 - Inspect scope, provider, source, resolution reason, duplicate groups, and redacted previews.
+- Load Memory text only when requested and explicitly edit eligible project or user-maintained Memory Markdown files with conflict detection and confirmation.
 - Connect to the experimental Codex App Server for current skills/hooks and recent workspace threads.
 - Replay a Codex thread as a linear, metadata-only sequence of turns and item types.
 - Copy an aggregate-only Markdown snapshot that excludes file contents and absolute paths.
@@ -111,7 +113,8 @@ Bundles are written below `src-tauri/target/release/bundle/` (or a target-specif
 ## Privacy and safety boundaries
 
 - **Local-first:** there is no Harness Lens cloud account or telemetry pipeline.
-- **Read-only:** the app does not edit Harness files or resume/start/delete Codex threads.
+- **Read-only by default:** Rules, Skills, Hooks, Agents, Config, workflows, and Codex threads are never modified. Only eligible, already-scanned Memory Markdown files can be changed after an explicit save confirmation.
+- **Opt-in raw Memory:** Memory text is not included in the normal snapshot or Share output. It reaches the editor only after the user asks to view that file and may contain unredacted sensitive text.
 - **Explicit scope:** scanning starts from a workspace chosen by the user plus documented user-level Harness locations.
 - **Best-effort redaction:** common secret patterns are redacted before previews, but no redactor can guarantee that arbitrary sensitive text is removed.
 - **Conservative sharing:** the v0.1 Share view contains aggregate counts only.

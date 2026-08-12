@@ -30,7 +30,7 @@ You should receive an acknowledgement within 7 days and an initial assessment wi
 - Redaction is best-effort and is not a data-loss-prevention guarantee.
 - Current release artifacts are ad-hoc signed and not Apple-notarized.
 - The Codex App Server adapter is experimental and may encounter schema changes.
-- Harness Lens is designed to be read-only, but it still processes files chosen by the user; a malicious repository should be treated as untrusted input.
+- Harness Lens is read-only by default. Its only write path is an explicit edit of an eligible, already-scanned Memory Markdown file, protected by a revision-bound token, conflict checks, native confirmation, and atomic replacement. A malicious repository should still be treated as untrusted input.
 - The app does not promise isolation from another malicious process running as the same operating-system user.
 
 See [Privacy](docs/PRIVACY.md) and the [Threat model](docs/THREAT-MODEL.md) for details.
