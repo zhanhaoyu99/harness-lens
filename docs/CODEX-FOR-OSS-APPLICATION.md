@@ -1,18 +1,21 @@
-# Codex for Open Source — application draft
+# Codex for Open Source — submitted application record
 
-This is a maintainer worksheet, not proof of acceptance or adoption. The [official form](https://openai.com/form/codex-for-oss/) and current eligibility rules remain authoritative. Do not submit until the repository and release links are public and the maintainer has reviewed the [Codex for Open Source Program Terms](https://developers.openai.com/codex/codex-for-oss-terms).
+Submitted: **2026-08-12**
+
+Status: **The official form displayed its receipt confirmation; selection is not implied.**
+
+This is a privacy-safe public record of the submitted project narrative. Personal contact information and the OpenAI organization ID were sent only through the [official form](https://openai.com/form/codex-for-oss/) and are intentionally not stored in this repository. The current eligibility rules and [Codex for Open Source Program Terms](https://developers.openai.com/codex/codex-for-oss-terms) remain authoritative.
 
 ## Required information
 
-- First name: **TODO — maintainer must provide**
-- Last name: **TODO — maintainer must provide**
-- Email associated with the maintainer's ChatGPT account: **TODO — maintainer must provide**
+- Maintainer identity: **submitted privately through the official form**
+- Email associated with the maintainer's ChatGPT account: **submitted privately through the official form**
 - GitHub username: `zhanhaoyu99`
 - Public GitHub profile: https://github.com/zhanhaoyu99
 - Primary repository: https://github.com/zhanhaoyu99/harness-lens
 - Role: **Primary maintainer**
 - Interests: **Codex Security** and **API credits for my project**
-- OpenAI organization ID: **TODO — maintainer must provide**
+- OpenAI organization ID: **submitted privately through the official form**
 - Public release: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1
 - Current evidence: [repository](https://github.com/zhanhaoyu99/harness-lens), [CI](https://github.com/zhanhaoyu99/harness-lens/actions/workflows/ci.yml), [synthetic demo](https://zhanhaoyu99.github.io/harness-lens/), [v0.1.1 release](https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1), [first maintenance loop](https://github.com/zhanhaoyu99/harness-lens/issues/10), and [public roadmap issues](https://github.com/zhanhaoyu99/harness-lens/issues?q=is%3Aissue%20state%3Aopen%20-label%3Adependencies). Add contributors, downloads, or dependent projects only as they exist.
 
@@ -23,6 +26,10 @@ This is a maintainer worksheet, not proof of acceptance or adoption. The [offici
 ## How API credits would be used (form-ready, under 500 characters)
 
 > Credits would support an open, reproducible compatibility and evaluation suite: synthetic repositories with varied rules, skills, hooks, and graphs; Codex-driven issue reproductions; verifier-backed comparisons across Harness revisions; and privacy tests that confirm raw prompts and secrets never enter published fixtures. Results, fixtures, failure categories, and supported-version evidence would be published in the repository.
+
+## Why Codex Security is relevant (form-ready, under 500 characters)
+
+> Harness Lens inspects agent configuration, local filesystem metadata, hooks, and persisted run evidence—surfaces where prompt injection, malicious repository instructions, path traversal, secret exposure, and unsafe tool invocation can cross trust boundaries. Codex Security would help review the scanner, redaction, Tauri command ACLs, symlink containment, and future verifier adapters, and turn validated findings into public regression tests and threat-model updates.
 
 ## Anything else we should know? (form-ready, under 500 characters)
 
@@ -37,7 +44,8 @@ This is a maintainer worksheet, not proof of acceptance or adoption. The [offici
 - [x] Real public issue-to-fix-to-release loop: [#10](https://github.com/zhanhaoyu99/harness-lens/issues/10) → [#11](https://github.com/zhanhaoyu99/harness-lens/pull/11) → [v0.1.1](https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1).
 - [x] Public maintenance evidence through reviewed dependency PRs, green workflows, and two tested releases.
 - [x] Concise explanation of ecosystem importance without implying adoption; real usage signals remain future evidence.
-- [ ] Maintainer has reviewed the official terms and supplied first name, last name, ChatGPT-account email, and org ID.
+- [x] Maintainer reviewed the official terms and supplied all required personal fields through the official form.
+- [x] Official form displayed its submission receipt confirmation on 2026-08-12.
 
 ## Suggested supporting narrative
 
@@ -47,4 +55,4 @@ The initial release is intentionally narrow. It provides useful local inspection
 
 ## Submission boundary
 
-The maintainer must personally review and submit the official application because it requires personal contact information, the email associated with the maintainer's ChatGPT account, an OpenAI organization ID, and acceptance of current program terms. Never fill missing information with guesses, and never describe repository age, users, stars, downloads, or adoption without a public source.
+Personal contact information and the OpenAI organization ID were submitted directly to OpenAI and must remain outside the public repository. This record documents the submitted narrative and observed receipt confirmation only; it does not claim selection, benefits, adoption, or independent verification by OpenAI. Never describe users, stars, downloads, or adoption without a public source.
