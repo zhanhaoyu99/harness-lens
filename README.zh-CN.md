@@ -46,6 +46,7 @@ Harness Lens 会严格区分四类结论：
 - 区分用户全局、项目级、子项目级与项目绑定来源；选择仓库内子目录时，会沿仓库根目录到当前工作区的路径识别各层 Harness。
 - 通过 Map 或 List 浏览 Instructions、Rules、Skills、Hooks、Agents、Config、Memory 和 Workflows。
 - 查看作用域、Provider、来源、解析原因、重复组和经过脱敏的预览。
+- 通过可组合的来源、范围、类型和搜索筛选，直接区分 Codex、Claude、共享及其他已发现的 Harness 内容。
 - 仅在用户主动点击后加载 Memory 正文，并在显式确认、冲突检测的保护下编辑符合条件的项目级或用户维护 Memory Markdown 文件。
 - 连接实验性的 Codex App Server，读取当前 Skills / Hooks 与工作区最近的 Threads。
 - 将 Codex Thread 重放为只包含元数据的线性 Turn / Item 序列。

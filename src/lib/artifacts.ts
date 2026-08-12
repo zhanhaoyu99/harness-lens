@@ -34,6 +34,36 @@ export function filterArtifacts(
   });
 }
 
+export interface ProviderFacetCounts {
+  total: number;
+  byProvider: Record<HarnessProvider, number>;
+}
+
+export function providerFacetCounts(
+  artifacts: HarnessArtifact[],
+  filter: ArtifactFilter,
+): ProviderFacetCounts {
+  const matchingArtifacts = filterArtifacts(artifacts, {
+    ...filter,
+    provider: undefined,
+  });
+  const byProvider: Record<HarnessProvider, number> = {
+    codex: 0,
+    claude: 0,
+    shared: 0,
+    plugin: 0,
+  };
+
+  for (const artifact of matchingArtifacts) {
+    byProvider[artifact.provider] += 1;
+  }
+
+  return {
+    total: matchingArtifacts.length,
+    byProvider,
+  };
+}
+
 export function effectiveCount(artifacts: HarnessArtifact[]): number {
   return artifacts.filter((artifact) => artifact.resolution === "effective").length;
 }

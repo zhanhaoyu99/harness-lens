@@ -46,6 +46,7 @@ All screenshots below use synthetic data. The browser demo cannot read local fil
 - Distinguish user-global, project, nested-project, and project-bound sources; nested workspaces are scanned along their repository-to-workspace chain.
 - Browse instructions, rules, skills, hooks, agents, config, memory, and workflows in Map or List form.
 - Inspect scope, provider, source, resolution reason, duplicate groups, and redacted previews.
+- Separate Codex, Claude, shared, and other discovered Harness sources with composable source, scope, type, and search filters.
 - Load Memory text only when requested and explicitly edit eligible project or user-maintained Memory Markdown files with conflict detection and confirmation.
 - Connect to the experimental Codex App Server for current skills/hooks and recent workspace threads.
 - Replay a Codex thread as a linear, metadata-only sequence of turns and item types.

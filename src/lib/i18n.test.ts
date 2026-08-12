@@ -31,6 +31,9 @@ describe("i18n", () => {
     expect(messages.zh.labels.scope.repo).toBe("项目级");
     expect(messages.zh.labels.scope.nested).toBe("子项目级");
     expect(messages.zh.labels.scope.worktree).toBe("项目绑定");
+    expect(messages.zh.explorer.providerFilter).toBe("工具来源");
+    expect(messages.zh.explorer.results(3, 9)).toBe("3 / 9 项");
+    expect(messages.en.explorer.results(3, 9)).toBe("3 / 9 items");
     expect(localizeWarning(warning, "zh").title).toBe("尚未连接运行时证据");
   });
 
