@@ -11,6 +11,16 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Trustworthy comparison of Harness revisions and failure modes.
 - Notarized and broader macOS distribution.
 
+## [0.1.1] - 2026-08-12
+
+### Changed
+
+- Upgraded the GitHub Actions used by CI, Pages, and Release to their Node.js 24-based major versions.
+
+### Fixed
+
+- Removed the Node.js 20 deprecation annotations from the maintained GitHub workflows.
+
 ## [0.1.0] - 2026-08-12
 
 ### Added
@@ -32,5 +42,6 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Completed runs and turns are not independently evaluated for correctness.
 - Redaction is best-effort and requires human review before sharing.
 
-[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1
 [0.1.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.0
