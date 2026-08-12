@@ -123,7 +123,7 @@ pnpm tauri build
 
 Harness Lens 是一个早期、持续维护的开源项目。v0.1 已可用于本地 Harness 检查与 Codex Run 排查，但还不能把历史 Run 与不可变的 Harness 快照准确绑定，也不能提供可信的单次成本或判断任务是否成功。
 
-Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详见 [Roadmap](docs/ROADMAP.md)、[产品方向](docs/PRODUCT.md)和[架构](docs/ARCHITECTURE.md)。
+Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详见 [Roadmap](docs/ROADMAP.md)、[产品方向](docs/PRODUCT.md)、[架构](docs/ARCHITECTURE.md)和[版本化兼容性证据](docs/COMPATIBILITY.md)。
 
 ## 参与贡献
 
