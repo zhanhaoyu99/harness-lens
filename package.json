@@ -1,0 +1,62 @@
+{
+  "name": "harness-lens",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local-first Agent Harness DevTools for definitions, resolution, and read-only runtime evidence.",
+  "license": "MIT",
+  "author": "Zane",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhanhaoyu99/harness-lens.git"
+  },
+  "homepage": "https://github.com/zhanhaoyu99/harness-lens#readme",
+  "bugs": {
+    "url": "https://github.com/zhanhaoyu99/harness-lens/issues"
+  },
+  "keywords": [
+    "agent-harness",
+    "codex",
+    "claude-code",
+    "developer-tools",
+    "observability"
+  ],
+  "packageManager": "pnpm@11.16.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm test && pnpm build && pnpm rust:check",
+    "rust:check": "sh scripts/with-rust.sh sh -c 'cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml'",
+    "rust:test": "sh scripts/with-rust.sh cargo test --manifest-path src-tauri/Cargo.toml",
+    "scan": "sh scripts/with-rust.sh cargo run --quiet --manifest-path src-tauri/Cargo.toml --example scan_summary --",
+    "tauri": "sh scripts/with-rust.sh tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@xyflow/react": "^12.11.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

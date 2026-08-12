@@ -1,0 +1,11 @@
+[[permission]]
+identifier = "harness-read"
+description = "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, and open sources from the current scan allowlist."
+commands.allow = [
+  "choose_workspace",
+  "load_default_workspace",
+  "rescan_workspace",
+  "inspect_runtime",
+  "load_runtime_run",
+  "open_artifact",
+]

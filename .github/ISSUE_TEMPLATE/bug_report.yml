@@ -1,0 +1,66 @@
+name: Bug report
+description: Report reproducible behavior using synthetic or safely redacted evidence.
+title: "[Bug]: "
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Do not attach secrets, private prompts, customer data, absolute private paths, or raw Codex thread payloads. Security vulnerabilities must use a private Security Advisory.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic reproduction
+      description: Provide the smallest safe fixture and numbered steps that reproduce the issue.
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence-stage
+    attributes:
+      label: Evidence stage
+      options:
+        - Defined (discovery/existence)
+        - Resolved (scope/precedence/trust)
+        - Observed (run/turn/item metadata)
+        - Evaluated (independent verifier outcome)
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Harness Lens version
+      placeholder: v0.1.0 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: macOS version/architecture and Codex CLI version if runtime-related.
+      placeholder: macOS 15 arm64; codex-cli x.y.z
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Additional safely redacted evidence
+      description: Logs or screenshots must be synthetic and manually reviewed.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
+        - label: I manually reviewed this report and its attachments for sensitive information.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

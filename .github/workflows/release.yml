@@ -1,0 +1,117 @@
+name: Draft macOS release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to package (for example, v0.1.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build-draft:
+    name: Build arm64 DMG and create draft
+    runs-on: macos-14
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Validate version tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]
+          git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}"
+          version="${RELEASE_TAG#v}"
+          test "$(node -p 'require("./package.json").version')" = "$version"
+          test "$(sed -n 's/^version = "\([^"]*\)"/\1/p' src-tauri/Cargo.toml | head -1)" = "$version"
+          test "$(node -p 'require("./src-tauri/tauri.conf.json").version')" = "$version"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Rust target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          targets: aarch64-apple-darwin
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate source
+        run: |
+          set -euo pipefail
+          pnpm test
+          pnpm build
+          sh scripts/with-rust.sh cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+          sh scripts/with-rust.sh cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+          pnpm rust:test
+
+      - name: Build macOS arm64 bundle
+        run: pnpm tauri build --target aarch64-apple-darwin
+
+      - name: Prepare release assets
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          dmg_path="$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -type f -name '*.dmg' -print -quit)"
+          test -n "$dmg_path"
+          version="${RELEASE_TAG#v}"
+          asset="Harness-Lens_${version}_aarch64.dmg"
+          mkdir -p release
+          cp "$dmg_path" "release/$asset"
+          (cd release && shasum -a 256 "$asset" > "$asset.sha256")
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-lens-${{ inputs.tag }}-macos-arm64
+          path: release/*
+          if-no-files-found: error
+
+      - name: Create draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "A GitHub Release already exists for $RELEASE_TAG" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" release/* \
+            --verify-tag \
+            --draft \
+            --generate-notes \
+            --title "Harness Lens $RELEASE_TAG" \
+            --notes "macOS arm64. Ad-hoc signed and not Apple-notarized; verify the SHA-256 asset and review the documented Gatekeeper boundary before publishing."

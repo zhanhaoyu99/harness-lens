@@ -1,0 +1,57 @@
+name: Feature request
+description: Propose a focused capability with explicit evidence and privacy boundaries.
+title: "[Proposal]: "
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: user-problem
+    attributes:
+      label: User problem
+      description: What decision or task is difficult today? Avoid starting with a proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired observable outcome
+      description: What would the user be able to understand or verify?
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence-stage
+    attributes:
+      label: Strongest evidence stage required
+      options:
+        - Defined
+        - Resolved
+        - Observed
+        - Evaluated
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence source
+      description: Which file, runtime declaration, event, or independent verifier can support the claim?
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy and authority impact
+      description: What new paths, data, commands, persistence, exports, or network behavior would this add?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
+        - label: I am not treating run completion as proof of task success.
+          required: true
