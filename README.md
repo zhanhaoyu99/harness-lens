@@ -123,7 +123,7 @@ Treat all previews and screenshots as potentially sensitive. Review anything bef
 
 Harness Lens is an early, actively maintained open-source project. v0.1 is useful for local inspection and Codex run forensics, but it does not yet bind a historical run to an immutable Harness snapshot, calculate trustworthy per-run cost, or judge task success.
 
-The roadmap prioritizes those evidence boundaries over adding orchestration features. See [Roadmap](docs/ROADMAP.md), [Product direction](docs/PRODUCT.md), and [Architecture](docs/ARCHITECTURE.md).
+The roadmap prioritizes those evidence boundaries over adding orchestration features. See [Roadmap](docs/ROADMAP.md), [Product direction](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), and the [versioned compatibility evidence](docs/COMPATIBILITY.md).
 
 ## Contributing
 
