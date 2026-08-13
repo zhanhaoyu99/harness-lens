@@ -63,7 +63,7 @@ Run Recorder 只保留白名单中的元数据，不展示原始 Prompt、工具
 当前分发版本仅支持 **Apple Silicon（macOS arm64，macOS 11+）**。从 [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases) 下载 `.dmg` 及校验文件，然后验证：
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.2.0_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.3.0_aarch64.dmg.sha256
 ```
 
 当前产物采用 ad-hoc 签名，**尚未经过 Apple Notarization**。Gatekeeper 可能弹出警告或阻止启动。请先核对校验值并确认信任本项目，再通过 macOS「隐私与安全性」手动打开。在完成公证前，从源码构建是更稳妥的方式。
