@@ -16,6 +16,7 @@ const tauri = vi.hoisted(() => ({
   chooseWorkspace: vi.fn(),
   clearContextSnapshotHistory: vi.fn(),
   compareContextSnapshots: vi.fn(),
+  generateCompatibilityReport: vi.fn(),
   inspectRuntime: vi.fn(),
   isTauriRuntime: vi.fn(),
   listContextSnapshots: vi.fn(),
@@ -124,6 +125,41 @@ afterEach(() => {
 });
 
 describe("runtime scan workspace isolation", () => {
+  it("keeps an unsaved Memory draft when navigating to and from Share", async () => {
+    const workspaceA = workspace("workspace-a");
+    tauri.chooseWorkspace.mockResolvedValueOnce(workspaceA);
+    tauri.inspectRuntime.mockResolvedValueOnce(runtime("initial-a"));
+    tauri.loadMemoryArtifact.mockResolvedValueOnce({
+      artifactId: "memory",
+      editToken: "memory-edit-token",
+      content: "saved Memory content",
+      contentHash: "c".repeat(64),
+      sizeBytes: 20,
+      editable: true,
+      editabilityReason: null,
+    });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<App />);
+
+    await waitFor(() => expect(tauri.loadDefaultWorkspace).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Choose workspace" }));
+    await screen.findByText(workspaceA.workspaceName);
+    fireEvent.click(screen.getByRole("row", { name: "Inspect Memory registry" }));
+    fireEvent.click(screen.getByRole("button", { name: "View memory content" }));
+    const editor = await screen.findByRole("textbox", { name: "Memory content" });
+    fireEvent.change(editor, { target: { value: "unsaved Memory draft" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    expect(screen.getByRole("heading", { name: "Compatibility Report" })).toBeInTheDocument();
+    expect(screen.getByText(/unsaved Memory draft is preserved/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Harness Items" }));
+
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("textbox", { name: "Memory content" })).toHaveValue(
+      "unsaved Memory draft",
+    );
+  });
+
   it("keeps an A refresh from overwriting B data or ending B loading", async () => {
     const workspaceA = workspace("workspace-a");
     const workspaceB = workspace("workspace-b");

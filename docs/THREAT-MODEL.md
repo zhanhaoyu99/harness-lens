@@ -2,7 +2,7 @@
 
 ## Scope
 
-This threat model covers the current Harness Lens desktop app, filesystem scanner, Tauri command boundary, Share snapshot, experimental Codex App Server adapter, and v0.4's local metadata-only snapshot history and Saved-to-Saved comparison on macOS.
+This threat model covers the current Harness Lens source candidate: the desktop app, filesystem scanner, Tauri command boundary, schema-backed Share report, experimental Codex App Server adapter, and v0.4's local metadata-only snapshot history and Saved-to-Saved comparison on macOS.
 
 ## Assets to protect
 
@@ -48,7 +48,9 @@ User-level Harness files and the locally installed Codex binary are trusted more
 | Malicious path is opened | Only artifacts from the current scan can be opened | Same-user time-of-check/time-of-use replacement remains possible |
 | A Memory edit overwrites the wrong or newer file | Artifact-ID allowlist, short-lived revision-bound edit token, unsupported ownership/link/permission cases made view-only, explicit native confirmation, conflict detection, and same-directory atomic replacement | A malicious process already running as the same user remains outside the isolation boundary; macOS ACLs and extended attributes are not preserved by the current editor |
 | Raw Memory text leaks through a normal snapshot or Share | Memory is metadata-only in normal scans and loaded only on explicit request into transient editor state | The user can still copy or screenshot sensitive editor text |
-| Shared report leaks content | Current Share output is aggregate-only; absolute paths and content excluded | Screenshots and manual copying remain outside the export boundary |
+| Shared report leaks content | The schema-backed compatibility-report output is aggregate-only; absolute paths and content are excluded, and the complete Markdown is shown before copying | Screenshots and manual copying outside that reviewed report remain outside the export boundary |
+| Frontend supplies a private path or altered snapshot to a compatibility report | The desktop command has no path or snapshot parameter, uses the already-authorized workspace, and serializes through the Rust schema-v1 aggregate allowlist | Aggregate counts and validated source attribution can still reveal setup information; the user must inspect the full preview before copying |
+| An unsaved Memory draft is lost or exported while reporting | Reporting performs a separate read-only scan of saved disk state and neither clears nor serializes the editor draft | The saved disk version can differ from what the user currently sees in the editor, so the UI must make that boundary explicit |
 | Workspace selection or ordinary Rescan unexpectedly writes durable history | Live-scan commands remain transient; a separate explicit Capture command performs its own fresh backend scan and never accepts frontend snapshot content for persistence | Users may still misunderstand the Capture label without clear UI copy |
 | v0.4 history persists sensitive Harness content or an absolute path | A dedicated metadata-only persistence projection excludes all content and previews, raw Memory, absolute paths, and runtime payloads; serialization tests inspect the durable representation | Names, branch names, relative source labels, hashes, and change timing can still reveal project structure |
 | A malformed or tampered local snapshot creates false historical evidence | Versioned bounded schema, content-address verification, atomic writes, cross-process workspace lock, symlink-rejecting store checks, deterministic diffing, and visible failure instead of fallback to current state | A malicious process running as the same user can still modify or delete local application data outside the lock protocol |

@@ -1,6 +1,10 @@
 # Aggregate compatibility report
 
-Harness Lens can produce a reviewable, aggregate-only report for a real Codex or Claude Harness setup without opening the desktop app:
+Harness Lens can produce a reviewable, aggregate-only report for a real Codex or Claude Harness setup. In the v0.5 desktop candidate, open **Share**, generate a fresh report, inspect the complete preview, and then copy it explicitly. The report command accepts no frontend-supplied workspace path or snapshot: it scans the currently authorized workspace's saved files through the Rust backend, without changing the live Inventory, Memory edit session, runtime allowlists, or snapshot history.
+
+An unsaved Memory draft remains in the editor and is not part of the report; the fresh scan reads the saved file on disk. The report itself is transient and is not persisted or uploaded. The GitHub Pages browser demo can show only a clearly marked synthetic example and cannot produce real compatibility evidence.
+
+Source builders can generate the same report without opening the desktop app:
 
 ```bash
 pnpm compatibility-report -- /path/to/workspace

@@ -458,6 +458,31 @@ button { color: inherit; }
 .share-kind-grid strong { color: #bdc7cf; font-size: 12px; }
 .share-card footer { display: flex; align-items: center; gap: 7px; padding: 13px 24px; border-top: 1px solid var(--line); color: #64736f; font-size: 9px; }
 .share-card footer time { margin-left: auto; color: #596570; }
+.report-disk-boundary { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: #76838d; background: rgba(255,255,255,.025); font-size: 10px; line-height: 1.55; }
+.report-disk-boundary svg { flex: 0 0 auto; margin-top: 1px; color: #68aa9b; }
+.report-disk-boundary.dirty { border-color: rgba(231,174,95,.18); color: #ae9270; background: rgba(130,86,33,.09); }
+.report-disk-boundary.dirty svg { color: var(--warn); }
+.compatibility-report-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: rgba(14,19,25,.86); }
+.compatibility-report-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.compatibility-report-panel > header h2 { margin: 4px 0 0; color: #d9e1e6; font-size: 15px; }
+.report-schema-badge, .synthetic-report-badge { display: inline-flex; flex: 0 0 auto; padding: 4px 8px; border: 1px solid rgba(88,198,174,.17); border-radius: 7px; color: #76b5a7; background: rgba(52,132,115,.1); font-size: 9px; text-transform: uppercase; letter-spacing: .07em; }
+.synthetic-report-badge { border-color: rgba(231,174,95,.18); color: #b9976c; background: rgba(130,86,33,.1); }
+.synthetic-report-warning, .report-error { display: flex; align-items: flex-start; gap: 9px; margin: 14px 16px 0; padding: 10px 11px; border: 1px solid rgba(231,174,95,.16); border-radius: 9px; color: #a98e6b; background: rgba(130,86,33,.08); font-size: 10px; line-height: 1.5; }
+.synthetic-report-warning svg, .report-error svg { flex: 0 0 auto; margin-top: 1px; }
+.report-error { border-color: rgba(227,120,120,.16); color: #c49090; background: rgba(131,53,53,.08); }
+.report-error > div { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.report-error strong { color: #d7a2a2; font-size: 10.5px; }
+.report-error span { overflow-wrap: anywhere; }
+.report-review-instruction { margin: 0; padding: 12px 17px; color: #77848f; font-size: 10px; line-height: 1.5; }
+.compatibility-markdown-preview { margin: 0 16px 16px; overflow-x: auto; padding: 16px; border: 1px solid var(--line); border-radius: 10px; color: #b6c1c9; background: #090e13; font: 10px/1.65 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; overflow-wrap: anywhere; white-space: pre-wrap; }
+.synthetic-report-warning + .compatibility-markdown-preview { margin-top: 12px; }
+.report-copy-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 16px; border-top: 1px solid var(--line); background: rgba(255,255,255,.018); }
+.report-copy-row p { margin: 0; color: #6c7883; font-size: 9.5px; line-height: 1.45; }
+.report-copy-row .secondary-button { flex: 0 0 auto; }
+.report-empty-state { display: flex; min-height: 170px; flex-direction: column; align-items: center; justify-content: center; padding: 24px; color: #596671; text-align: center; }
+.report-empty-state svg { color: #66867f; }
+.report-empty-state strong { margin-top: 9px; color: #8e9aa4; font-size: 11px; }
+.report-empty-state span { max-width: 500px; margin-top: 5px; font-size: 9.5px; line-height: 1.5; }
 .empty-state.compact { display: flex; min-height: 330px; flex-direction: column; align-items: center; justify-content: center; color: #57636e; }
 .empty-state.compact strong { margin-top: 10px; color: #87939e; font-size: 11px; }
 .empty-state.compact span { margin-top: 4px; font-size: 9px; }
@@ -514,4 +539,12 @@ button { color: inherit; }
   .comparison-summary { grid-template-columns: repeat(2,minmax(86px,1fr)); }
   .snapshot-change > header { flex-direction: column; }
   .change-signals { justify-content: flex-start; }
+  .share-page-heading { align-items: stretch; flex-direction: column; gap: 14px; }
+  .share-page-heading .primary-button { align-self: flex-start; }
+  .share-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .share-metrics div { min-height: 82px; }
+  .share-card footer { align-items: flex-start; flex-wrap: wrap; }
+  .share-card footer time { width: 100%; margin-left: 21px; }
+  .report-copy-row { align-items: stretch; flex-direction: column; }
+  .report-copy-row .secondary-button { align-self: flex-start; }
 }

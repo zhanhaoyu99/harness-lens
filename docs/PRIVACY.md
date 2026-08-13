@@ -26,7 +26,9 @@ The scanner records normalized metadata such as type, provider, scope, path, siz
 
 Harness Lens invokes a locally installed Codex CLI for its experimental App Server API. The Codex CLI remains governed by its own version, configuration, authentication, and privacy terms.
 
-The GitHub Pages demo is a static browser build with synthetic examples. Browsers do not expose the Tauri filesystem or local Codex commands to that build, so it cannot scan the visitor's machine or load local threads.
+The GitHub Pages demo is a static browser build with synthetic examples. Browsers do not expose the Tauri filesystem or local Codex commands to that build, so it cannot scan the visitor's machine, load local threads, or create a real compatibility report.
+
+In the v0.5 desktop candidate, Share can explicitly request a fresh, read-only scan of the currently authorized workspace's saved files. The Rust backend projects the scan result into the versioned aggregate compatibility-report allowlist and returns a complete preview; the user must review it before a separate copy action. The command accepts no frontend path or snapshot, does not persist or upload the report, and does not replace live Inventory or authorization state. Unsaved Memory drafts remain transient editor state and are not included. Aggregate counts and validated Harness Lens source attribution can still reveal information and must be reviewed.
 
 ## Redaction is best-effort
 

@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { sampleSnapshot } from "./sample";
-import { buildShareSummary, shareStats } from "./share";
+import { buildSyntheticCompatibilityExample, shareStats } from "./share";
 
 describe("share snapshot", () => {
-  it("keeps the summary aggregate-only", () => {
-    const summary = buildShareSummary(sampleSnapshot, "zh");
+  it("keeps the synthetic schema-v1 example aggregate-only and unmistakable", () => {
+    const summary = buildSyntheticCompatibilityExample(sampleSnapshot);
 
-    expect(summary).toContain("Harness 快照");
+    expect(summary).toContain("SYNTHETIC DEMO");
+    expect(summary).toContain("Report schema: 1");
+    expect(summary).toContain("Not compatibility evidence");
     expect(summary).not.toContain(sampleSnapshot.workspacePath);
     expect(summary).not.toContain("Global agreements");
   });

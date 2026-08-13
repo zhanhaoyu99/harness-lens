@@ -12,7 +12,7 @@ Thank you for helping make agent tooling more observable and trustworthy. Harnes
 
 Please do not submit real secrets, prompts, model output, customer data, private repository paths, or raw Codex thread payloads. Reduce examples to synthetic fixtures first.
 
-For a real workspace, the aggregate report command provides a smaller starting point than a screenshot or raw scanner output:
+For a real workspace, the v0.5 desktop candidate can generate the same schema-backed report from **Share**: run the fresh read-only scan, inspect the complete output, and then copy it explicitly. Unsaved Memory drafts are not included. Source builders can use the command below:
 
 ```bash
 pnpm compatibility-report -- /path/to/workspace

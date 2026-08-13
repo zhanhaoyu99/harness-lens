@@ -148,7 +148,7 @@ Bundles are written below `src-tauri/target/release/bundle/` (or a target-specif
 - **Opt-in raw Memory:** Memory text is not included in the normal snapshot or Share output. It reaches the editor only after the user asks to view that file and may contain unredacted sensitive text.
 - **Explicit scope:** scanning starts from a workspace chosen by the user plus documented user-level Harness locations.
 - **Best-effort redaction:** common secret patterns are redacted before previews, but no redactor can guarantee that arbitrary sensitive text is removed.
-- **Conservative sharing:** the current Share view contains aggregate counts only.
+- **Conservative sharing:** desktop Share performs a fresh, read-only disk scan and shows the complete schema-v1 aggregate report before the user explicitly copies it. Unsaved Memory drafts stay local to the editor and are not scanned.
 - **Experimental runtime:** Codex App Server compatibility can change. Runtime errors are shown instead of silently fabricating evidence.
 
 Treat all previews and screenshots as potentially sensitive. Review anything before sharing it. See [Privacy](docs/PRIVACY.md), [Threat model](docs/THREAT-MODEL.md), and [Security policy](SECURITY.md).
@@ -165,7 +165,7 @@ The roadmap prioritizes those evidence boundaries over adding orchestration feat
 
 Issues, reproducible fixtures, provider-compatibility reports, privacy reviews, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). In the desktop app, open Share and copy the aggregate-only summary; source builders can use the CLI below. A report that confirms a documented workflow is useful too—it helps separate real support from assumptions without exposing your Harness content.
+If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). In the v0.5 desktop candidate, open Share, generate a fresh report, inspect every field, then copy it explicitly; source builders can use the CLI shown above. A report that confirms a documented workflow is useful too—it helps separate real support from assumptions without exposing your Harness content.
 
 If you build from source, `pnpm compatibility-report -- /path/to/workspace` creates a versioned aggregate starting point. Review it before sharing: counts can still reveal information about a setup. See the [report contract](docs/COMPATIBILITY-REPORT.md).
 

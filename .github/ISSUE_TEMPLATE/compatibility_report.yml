@@ -8,7 +8,7 @@ body:
       value: |
         Thank you for helping validate Harness Lens across real coding-agent setups. Report only safely redacted metadata. Do not attach private prompts, Memory text, secrets, customer data, absolute private paths, or raw Codex thread payloads.
 
-        Desktop app: open Share and copy the aggregate-only summary. Source build: run `pnpm compatibility-report -- /path/to/workspace` for a source-attributed aggregate report. Both exclude source contents and absolute paths, but counts can still reveal information about your setup, so inspect the complete output before posting it.
+        Desktop app: open Share, generate a fresh compatibility report, inspect every field, then copy it explicitly. Source build: run `pnpm compatibility-report -- /path/to/workspace` for a source-attributed aggregate report. Both exclude source contents and absolute paths, but counts and source attribution can still reveal information about your setup, so inspect the complete output before posting it. The browser demo is synthetic and is not compatibility evidence.
   - type: dropdown
     id: provider
     attributes:
@@ -55,7 +55,7 @@ body:
     id: aggregate-report
     attributes:
       label: Aggregate summary or report (optional)
-      description: Paste the complete reviewed output from desktop Share, or from `pnpm compatibility-report -- /path/to/workspace` when building from source. Do not paste the local diagnostic `pnpm scan` output because that includes the workspace path and branch.
+      description: Paste the complete reviewed schema-v1 output from desktop Share, or from `pnpm compatibility-report -- /path/to/workspace` when building from source. Do not paste the browser's synthetic example or the local diagnostic `pnpm scan` output because neither is a shareable real-workspace compatibility report.
       render: text
   - type: textarea
     id: scenario

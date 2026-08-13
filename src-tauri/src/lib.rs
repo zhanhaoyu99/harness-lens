@@ -18,6 +18,7 @@ use std::{
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 
+use compatibility_report::{AggregateCompatibilityReport, ReportSource};
 use memory_edit::{
     load_memory_file, memory_editability, replace_memory_file, validate_memory_content,
     verify_memory_revision,
@@ -98,6 +99,14 @@ struct MemorySaveResultDto {
 struct MemorySaveErrorDto {
     message: String,
     token_consumed: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CompatibilityReportResultDto {
+    report: AggregateCompatibilityReport,
+    markdown: String,
+    scanned_at: String,
 }
 
 impl MemorySaveErrorDto {
@@ -357,6 +366,55 @@ fn rescan_workspace(
         &memory_edit_sessions,
         &runtime_threads,
         &current_workspace,
+    )
+}
+
+fn compatibility_report_workspace(current_workspace: &CurrentWorkspace) -> Result<PathBuf, String> {
+    current_workspace
+        .0
+        .lock()
+        .map_err(|_| "Unable to read the authorized workspace.".to_string())?
+        .clone()
+        .ok_or_else(|| "Choose a workspace before generating a compatibility report.".to_string())
+}
+
+fn generate_compatibility_report_for_workspace(
+    workspace: &Path,
+    home: &Path,
+    source: ReportSource,
+) -> Result<CompatibilityReportResultDto, String> {
+    let snapshot = scanner::scan(workspace, home)?;
+    let scanned_at = snapshot.scanned_at.clone();
+    let report = AggregateCompatibilityReport::from_snapshot(&snapshot, source);
+    let markdown = report.to_markdown();
+
+    Ok(CompatibilityReportResultDto {
+        report,
+        markdown,
+        scanned_at,
+    })
+}
+
+#[tauri::command]
+fn generate_compatibility_report(
+    current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
+) -> Result<CompatibilityReportResultDto, String> {
+    let _operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to start the compatibility report scan.".to_string())?;
+    let workspace = compatibility_report_workspace(&current_workspace)?;
+    let home =
+        dirs::home_dir().ok_or_else(|| "Unable to locate the user home directory.".to_string())?;
+
+    // Scan the authorized workspace's saved files without replacing live UI state,
+    // allowlists, Memory edit sessions, or runtime evidence. The frontend cannot
+    // submit a workspace path or its mutable snapshot copy.
+    generate_compatibility_report_for_workspace(
+        &workspace,
+        &home,
+        ReportSource::detect_from_build_checkout(),
     )
 }
 
@@ -866,6 +924,7 @@ pub fn run() {
             choose_workspace,
             load_default_workspace,
             rescan_workspace,
+            generate_compatibility_report,
             list_context_snapshots,
             capture_context_snapshot,
             load_context_snapshot,
@@ -883,13 +942,82 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf, time::Instant};
+    use std::{collections::BTreeSet, fs, path::PathBuf, sync::Mutex, time::Instant};
 
     use super::{
-        active_memory_edit_session, authorized_memory, consume_memory_edit_session, file_identity,
-        safe_dialog_path, FileIdentity, MemoryEditSession, MemoryEditSessions,
-        ScannedMemoryArtifacts,
+        active_memory_edit_session, authorized_memory, compatibility_report_workspace,
+        consume_memory_edit_session, file_identity, generate_compatibility_report_for_workspace,
+        safe_dialog_path, CurrentWorkspace, FileIdentity, MemoryEditSession, MemoryEditSessions,
+        ReportSource, ScannedMemoryArtifacts,
     };
+
+    #[test]
+    fn compatibility_report_requires_a_selected_workspace() {
+        let error = compatibility_report_workspace(&CurrentWorkspace::default())
+            .expect_err("report generation must require a selected workspace");
+
+        assert_eq!(
+            error,
+            "Choose a workspace before generating a compatibility report."
+        );
+    }
+
+    #[test]
+    fn compatibility_report_fresh_scan_returns_only_aggregate_shareable_evidence() {
+        let directory = tempfile::tempdir().expect("temporary root");
+        let home = directory.path().join("home");
+        let workspace = directory.path().join("private-customer-workspace");
+        fs::create_dir_all(&home).expect("home fixture");
+        fs::create_dir_all(&workspace).expect("workspace fixture");
+        let artifact_path = workspace.join("AGENTS.md");
+        let secret = "customer-token=super-secret-value";
+        fs::write(&artifact_path, secret).expect("artifact fixture");
+
+        let current_workspace = CurrentWorkspace(Mutex::new(Some(workspace.clone())));
+        let authorized_workspace =
+            compatibility_report_workspace(&current_workspace).expect("authorized workspace");
+
+        let result = generate_compatibility_report_for_workspace(
+            &authorized_workspace,
+            &home,
+            ReportSource::default(),
+        )
+        .expect("generate compatibility report");
+
+        assert_eq!(result.report.artifact_count, 1);
+
+        let report_json = serde_json::to_string(&result.report).expect("serialize report");
+        let payload_json = serde_json::to_string(&result).expect("serialize report result");
+        for output in [&report_json, &result.markdown] {
+            assert!(!output.contains(&workspace.to_string_lossy().into_owned()));
+            assert!(!output.contains("private-customer-workspace"));
+            assert!(!output.contains("AGENTS.md"));
+            assert!(!output.contains(secret));
+            assert!(!output.contains(&result.scanned_at));
+        }
+        for sensitive_value in [
+            workspace.to_string_lossy().into_owned(),
+            "private-customer-workspace".to_string(),
+            "AGENTS.md".to_string(),
+            secret.to_string(),
+        ] {
+            assert!(!payload_json.contains(&sensitive_value));
+        }
+
+        let payload = serde_json::to_value(result).expect("serialize report result");
+        assert_eq!(
+            payload
+                .as_object()
+                .expect("report result object")
+                .keys()
+                .cloned()
+                .collect::<BTreeSet<_>>(),
+            ["markdown", "report", "scannedAt"]
+                .into_iter()
+                .map(str::to_string)
+                .collect()
+        );
+    }
 
     #[test]
     fn file_identity_detects_same_length_content_replacement() {

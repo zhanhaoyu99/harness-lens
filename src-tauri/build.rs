@@ -3,6 +3,7 @@ fn main() {
         "choose_workspace",
         "load_default_workspace",
         "rescan_workspace",
+        "generate_compatibility_report",
         "list_context_snapshots",
         "capture_context_snapshot",
         "load_context_snapshot",

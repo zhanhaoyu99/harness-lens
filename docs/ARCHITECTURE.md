@@ -39,7 +39,7 @@ React UI
 - workspace selection and recent workspace state;
 - Overview Map/List;
 - item inspector;
-- aggregate Share snapshot;
+- aggregate Share preview and, in the v0.5 candidate, an explicitly generated schema-v1 compatibility report;
 - metadata-only Codex Runs and linear replay;
 - v0.4: Saved-to-Saved Harness history and comparison;
 - later: bound-run and verifier evidence views.
@@ -69,8 +69,8 @@ Claude and other runtimes get separate adapters. Shared UI depends only on norma
 - Memory saves reject stale revisions, symbolic-link or multiply hard-linked sources, files owned by another user, special permission bits, byte-order marks or non-LF line endings, and unsupported formats; use a same-directory atomic replacement; and never provide create, rename, delete, force-save, backup, or autosave operations.
 - Session content and evidence are read only when the user opens a specific run.
 - Runtime normalization keeps allowlisted metadata and excludes raw prompts, reasoning, tool arguments and diffs.
-- The current Share snapshot contains aggregate counts only; it excludes content and absolute paths.
-- The headless compatibility report has its own versioned aggregate projection and allowlist. It includes a validated Harness Lens source revision when available, but excludes workspace and artifact names, paths, branches, content, artifact/content hashes, sizes, timestamps, and diagnostic details; tests assert that representative private fixture values cannot cross that serializer.
+- The Share page's local preview contains aggregate counts only. In the v0.5 candidate, a separate no-argument backend command performs a fresh read-only scan of the authorized workspace's saved files and returns the complete versioned report for review before an explicit copy action. It does not accept a frontend path/snapshot, replace live allowlists, persist the report, or include an unsaved Memory draft.
+- The desktop and headless compatibility reports use one versioned aggregate projection and allowlist. It includes a validated Harness Lens source revision when available, but excludes workspace and artifact names, paths, branches, content, artifact/content hashes, sizes, timestamps, and diagnostic details; tests assert that representative private fixture values cannot cross that serializer. The browser demo is synthetic and not real compatibility evidence.
 - Future non-aggregate exports require a separate redaction pass and preview.
 - Unknown runtime trust or precedence is shown as unknown rather than guessed.
 

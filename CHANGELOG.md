@@ -13,6 +13,7 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 - Add a privacy-conscious compatibility-report issue form so real provider support can be documented without collecting Harness content.
 - Add a versioned, source-attributed aggregate compatibility-report command that excludes workspace paths, Harness content, names, artifact/content hashes, branches, and diagnostic details.
+- Add a desktop Share flow that performs a fresh read-only disk scan, previews the complete schema-v1 aggregate report, and copies only after explicit review; unsaved Memory drafts and the synthetic browser demo remain outside real compatibility evidence.
 - Add a reproducible 31-second synthetic README tour covering Harness inventory, metadata-only Codex run replay, and Saved-to-Saved snapshot comparison.
 
 ### Security
