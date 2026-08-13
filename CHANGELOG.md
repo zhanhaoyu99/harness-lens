@@ -4,7 +4,9 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 ## [Unreleased]
 
-### Added for 0.4.0
+## [0.4.0] - 2026-08-13
+
+### Added
 
 - Keep ordinary workspace selection and Rescan operations live-only, without writing snapshot history.
 - Add an explicit Capture action that performs a fresh backend scan and atomically persists a capture referencing an immutable, content-addressed, metadata-only Harness snapshot.
@@ -22,6 +24,11 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 - Serialize snapshot-store access across app processes, reject symbolic-link store directories, verify content-addressed objects before use, and roll back uncommitted objects when an index write fails.
 - Surface post-commit durability and expired-metadata cleanup warnings without misreporting a committed capture as failed; retry pending cleanup on later access.
+
+### Changed
+
+- Raise the source-build minimum supported Rust version to 1.88 to match the locked dependency graph.
+- Upgrade the direct SHA-256 dependency to `sha2` 0.11 while preserving the existing digest-based identities.
 
 ### Deferred beyond 0.4.0
 
@@ -97,7 +104,8 @@ All notable changes to Harness Lens will be documented in this file. The project
 - Completed runs and turns are not independently evaluated for correctness.
 - Redaction is best-effort and requires human review before sharing.
 
-[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/zhanhaoyu99/harness-lens/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.4.0
 [0.3.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.3.0
 [0.2.0]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.2.0
 [0.1.1]: https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1

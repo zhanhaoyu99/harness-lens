@@ -51,7 +51,9 @@ The workflow deliberately creates a **draft** release. It does not auto-publish 
 For a local artifact:
 
 ```bash
-shasum -a 256 "Harness-Lens_0.3.0_aarch64.dmg" > Harness-Lens_0.3.0_aarch64.dmg.sha256
+version="$(node -p 'require("./package.json").version')"
+asset="Harness-Lens_${version}_aarch64.dmg"
+shasum -a 256 "$asset" > "$asset.sha256"
 ```
 
 Keep the filename in the checksum file identical to the uploaded asset name.

@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/zhanhaoyu99/harness-lens"
 homepage = "https://github.com/zhanhaoyu99/harness-lens"
 readme = "../README.md"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [lib]
 name = "harness_lens_lib"

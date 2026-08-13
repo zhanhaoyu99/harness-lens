@@ -60,9 +60,9 @@ Harness Lens 会严格区分四类结论：
 
 Run Recorder 只保留白名单中的元数据，不展示原始 Prompt、工具参数、模型推理或文件 Diff。
 
-## v0.4.0 候选版本范围
+## v0.4.0 版本范围
 
-v0.4.0 候选版本聚焦于**本地 Harness 版本历史**，而不是运行结果评估。普通的“选择工作区”和“重新扫描”只更新 Live Scan，不会写入历史。只有用户显式点击“Capture”后，后端才会重新执行一次 fresh scan，并原子保存一条引用不可变、内容寻址、仅包含元数据快照的 Capture。历史记录按工作区隔离，每个工作区固定保留最近 50 次显式 Capture，并提供需要明确确认的“清除此工作区历史”操作。
+v0.4.0 聚焦于**本地 Harness 版本历史**，而不是运行结果评估。普通的“选择工作区”和“重新扫描”只更新 Live Scan，不会写入历史。只有用户显式点击“Capture”后，后端才会重新执行一次 fresh scan，并原子保存一条引用不可变、内容寻址、仅包含元数据快照的 Capture。历史记录按工作区隔离，每个工作区固定保留最近 50 次显式 Capture，并提供需要明确确认的“清除此工作区历史”操作。
 
 对比页只比较同一工作区中的两份**已保存快照（Saved ↔ Saved）**，解释观测到的新增、移除、内容哈希变化、解析状态变化和诊断变化；如果扫描不完整，结论会继续明确标注边界。持久化历史不会保存 Harness 文件正文或预览、Memory 原文、绝对路径、Prompt、推理、工具参数、文件 Diff 或原始 Runtime Response。
 
@@ -75,7 +75,7 @@ v0.4.0 候选版本聚焦于**本地 Harness 版本历史**，而不是运行结
 当前分发版本仅支持 **Apple Silicon（macOS arm64，macOS 11+）**。从 [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases) 下载 `.dmg` 及校验文件，然后验证：
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.3.0_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.4.0_aarch64.dmg.sha256
 ```
 
 当前产物采用 ad-hoc 签名，**尚未经过 Apple Notarization**。Gatekeeper 可能弹出警告或阻止启动。请先核对校验值并确认信任本项目，再通过 macOS「隐私与安全性」手动打开。在完成公证前，从源码构建是更稳妥的方式。
@@ -87,7 +87,7 @@ shasum -a 256 -c Harness-Lens_0.3.0_aarch64.dmg.sha256
 - Apple Silicon Mac，macOS 11+
 - Node.js 22+
 - pnpm 11
-- stable Rust，并安装 `rustfmt`、`clippy`
+- Rust 1.88 或更高版本，并安装 `rustfmt`、`clippy`
 - Xcode Command Line Tools
 
 ```bash
@@ -139,7 +139,7 @@ pnpm tauri build
 
 Harness Lens 是一个早期、持续维护的开源项目。当前版本已支持本地 Harness 检查、分层 Memory 管理与 Codex Run 排查，但还不能把历史 Run 与不可变的 Harness 快照准确绑定，也不能提供可信的单次成本或判断任务是否成功。
 
-本地 v0.4.0 候选版本已经加入 metadata-only 快照历史与 Saved ↔ Saved Harness 对比；它不是当前已经公开发布的版本，也不会在本轮补齐 Run Binding 或 Verifier 证据。
+v0.4.0 已加入 metadata-only 快照历史与 Saved ↔ Saved Harness 对比，但不会在本轮补齐 Run Binding 或 Verifier 证据。
 
 Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详见 [Roadmap](docs/ROADMAP.md)、[产品方向](docs/PRODUCT.md)、[架构](docs/ARCHITECTURE.md)和[版本化兼容性证据](docs/COMPATIBILITY.md)。
 

@@ -2,7 +2,7 @@
 
 ## Scope
 
-This threat model covers the current Harness Lens desktop app, filesystem scanner, Tauri command boundary, Share snapshot, experimental Codex App Server adapter, and the v0.4 candidate's local metadata-only snapshot history and Saved-to-Saved comparison on macOS.
+This threat model covers the current Harness Lens desktop app, filesystem scanner, Tauri command boundary, Share snapshot, experimental Codex App Server adapter, and v0.4's local metadata-only snapshot history and Saved-to-Saved comparison on macOS.
 
 ## Assets to protect
 

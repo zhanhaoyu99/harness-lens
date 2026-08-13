@@ -44,9 +44,9 @@ The Share view is intentionally aggregate-only and excludes file contents and ab
 
 ## Local persistence
 
-The published v0.3 release does not maintain a Harness Lens database. Browser/UI state and normal operating-system caches may exist locally.
+Before v0.4, Harness Lens did not maintain its own snapshot-history store. Browser/UI state and normal operating-system caches may still exist locally.
 
-The v0.4 candidate adds app-managed local history only when the user explicitly chooses Capture. Choosing a workspace or using Rescan updates the live view without writing history. On Capture, the backend performs a fresh scan and atomically creates a workspace-scoped capture that references an immutable, content-addressed, metadata-only snapshot; it does not persist a snapshot object supplied by the frontend. The persisted projection may include workspace and artifact display names, Git branch, safe relative source labels, provider, kind, scope, content hashes, sizes, resolution states, normalized diagnostics, capture time, completeness, and compatibility versions. These metadata can still reveal project structure or change patterns, so the local store should be treated as sensitive developer data.
+v0.4 adds app-managed local history only when the user explicitly chooses Capture. Choosing a workspace or using Rescan updates the live view without writing history. On Capture, the backend performs a fresh scan and atomically creates a workspace-scoped capture that references an immutable, content-addressed, metadata-only snapshot; it does not persist a snapshot object supplied by the frontend. The persisted projection may include workspace and artifact display names, Git branch, safe relative source labels, provider, kind, scope, content hashes, sizes, resolution states, normalized diagnostics, capture time, completeness, and compatibility versions. These metadata can still reveal project structure or change patterns, so the local store should be treated as sensitive developer data.
 
 The v0.4 persisted projection must not include:
 

@@ -50,7 +50,7 @@ The app does not treat Codex's on-disk rollout JSONL as a permanent public contr
 
 The flight recorder shows a linear sequence of turns and normalized item types. It excludes raw prompts, reasoning, tool arguments and file diffs. A completed turn is runtime activity, not verifier evidence or proof of success.
 
-Historical thread reads do not currently include a trustworthy historical instruction-source snapshot. Therefore the current release does not claim that current skills/hooks are the exact Harness used by an older run. Capturing and binding immutable context snapshots is an M2 requirement.
+Historical thread reads do not include a trustworthy historical instruction-source snapshot. Therefore v0.4 does not claim that current skills/hooks are the exact Harness used by an older run. Binding an immutable snapshot at a provider-backed execution boundary remains an M2 continuation requirement.
 
 v0.4 local capture history does not relax that boundary. A saved snapshot and a run may have nearby timestamps without proving that the snapshot was active when the run executed. Runs remain unbound until a provider adapter supplies a trustworthy execution-time capture point; the UI must not offer a “nearest snapshot” association as evidence.
 
@@ -75,9 +75,9 @@ Claude and other runtimes get separate adapters. Shared UI depends only on norma
 
 ## v0.4 snapshot persistence
 
-The published v0.3 release remains in-memory. In v0.4, choosing a workspace and using Rescan remain transient live-scan operations: they update the current allowlists and UI but do not create history. Persistence is entered only through a separate, explicit Capture command. That backend command performs its own fresh scan and atomically writes the resulting metadata-only capture; it must not accept a frontend-supplied `HarnessSnapshot` as historical evidence. A fresh-scan or write failure creates no partial capture.
+Before v0.4, choosing a workspace and scanning remained entirely in memory. In v0.4, choosing a workspace and using Rescan remain transient live-scan operations: they update the current allowlists and UI but do not create history. Persistence is entered only through a separate, explicit Capture command. That backend command performs its own fresh scan and atomically writes the resulting metadata-only capture; it must not accept a frontend-supplied `HarnessSnapshot` as historical evidence. A fresh-scan or write failure creates no partial capture.
 
-The v0.4 persistence design adds two separate concepts behind narrow Tauri commands:
+The v0.4 persistence model uses two separate concepts behind narrow Tauri commands:
 
 - `ContextSnapshot`: an immutable, content-addressed payload derived from a deterministic ordering of normalized Harness item metadata and resolution evidence;
 - `SnapshotCapture`: a workspace-scoped observation that records capture time, Git branch, completeness, schema version, app/scanner compatibility versions, and the referenced snapshot identifier. Runtime adapter compatibility belongs to a later execution-time binding record, not the v0.4 static capture.
