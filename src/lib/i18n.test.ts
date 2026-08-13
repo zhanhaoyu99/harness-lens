@@ -34,6 +34,9 @@ describe("i18n", () => {
     expect(messages.zh.explorer.providerFilter).toBe("工具来源");
     expect(messages.zh.explorer.results(3, 9)).toBe("3 / 9 项");
     expect(messages.en.explorer.results(3, 9)).toBe("3 / 9 items");
+    expect(messages.zh.compare.capture).toBe("捕获快照");
+    expect(messages.zh.compare.safeBoundary).toContain("不包含文件正文或绝对路径");
+    expect(messages.en.compare.overlappingCounts).toContain("not added");
     expect(localizeWarning(warning, "zh").title).toBe("尚未连接运行时证据");
   });
 

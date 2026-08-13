@@ -83,6 +83,86 @@ export interface HarnessSnapshot {
   warnings: HarnessWarning[];
 }
 
+export interface ContextSnapshotSummary {
+  captureId: string;
+  snapshotId: string;
+  schemaVersion: number;
+  workspaceKey: string;
+  workspaceName: string;
+  gitBranch: string | null;
+  capturedAt: string;
+  itemCount: number;
+  diagnosticCount: number;
+  complete: boolean;
+  appVersion: string;
+  scannerVersion: string;
+}
+
+export interface ContextSnapshotItem {
+  id: string;
+  name: string;
+  kind: HarnessKind;
+  provider: HarnessProvider;
+  scope: HarnessScope;
+  sourceLabel: string;
+  contentHash: string;
+  sizeBytes: number;
+  resolution: ResolutionState;
+  duplicateGroupId: string | null;
+  counterpartId: string | null;
+}
+
+export interface ContextSnapshotDiagnostic {
+  id: string;
+  severity: HarnessWarning["severity"];
+  artifactIds: string[];
+}
+
+export interface StoredContextSnapshot {
+  summary: ContextSnapshotSummary;
+  items: ContextSnapshotItem[];
+  diagnostics: ContextSnapshotDiagnostic[];
+}
+
+export interface ContextSnapshotCaptureResult {
+  liveSnapshot: HarnessSnapshot;
+  captured: ContextSnapshotSummary | null;
+  history: ContextSnapshotSummary[];
+  persistenceError: string | null;
+  storageStatus: ContextSnapshotStorageStatus;
+}
+
+export interface ContextSnapshotStorageStatus {
+  cleanupPending: boolean;
+  cleanupWarning: string | null;
+  durabilityWarning: string | null;
+}
+
+export interface ContextSnapshotClearResult {
+  cleared: boolean;
+}
+
+export type SnapshotChangeKind = "added" | "removed" | "changed";
+
+export interface SnapshotArtifactChange {
+  artifactId: string;
+  kind: SnapshotChangeKind;
+  before: ContextSnapshotItem | null;
+  after: ContextSnapshotItem | null;
+  contentChanged: boolean;
+  resolutionChanged: boolean;
+  metadataChanged: boolean;
+}
+
+export interface ContextSnapshotComparison {
+  base: ContextSnapshotSummary;
+  target: ContextSnapshotSummary;
+  changes: SnapshotArtifactChange[];
+  unchangedCount: number;
+  diagnosticsChanged: boolean;
+  complete: boolean;
+}
+
 export type RuntimeConnectionState = "connected" | "unavailable" | "error";
 
 export interface CodexRuntimeSkill {

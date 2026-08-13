@@ -3,6 +3,7 @@ pub mod model;
 mod redaction;
 pub mod runtime;
 pub mod scanner;
+mod snapshot_store;
 
 use std::{
     collections::{HashMap, HashSet},
@@ -24,7 +25,7 @@ use model::{HarnessKind, HarnessSnapshot};
 use runtime::{CodexRunDetail, CodexRuntimeSnapshot};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
@@ -119,6 +120,12 @@ struct ScannedRuntimeThreads(Mutex<HashSet<String>>);
 
 #[derive(Default)]
 struct CurrentWorkspace(Mutex<Option<PathBuf>>);
+
+#[derive(Default)]
+struct WorkspaceScanOperations(Mutex<()>);
+
+#[derive(Default)]
+struct SnapshotStoreOperations(Mutex<()>);
 
 fn hash_file(path: &Path, expected_len: u64) -> Result<String, String> {
     const MAX_OPENABLE_BYTES: u64 = 16 * 1024 * 1024;
@@ -264,6 +271,7 @@ fn scan_authorized_workspace(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 async fn choose_workspace(
     app: AppHandle,
     title: String,
@@ -272,6 +280,7 @@ async fn choose_workspace(
     memory_edit_sessions: State<'_, MemoryEditSessions>,
     runtime_threads: State<'_, ScannedRuntimeThreads>,
     current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
 ) -> Result<Option<HarnessSnapshot>, String> {
     let Some(selection) = app.dialog().file().set_title(title).blocking_pick_folder() else {
         return Ok(None);
@@ -279,6 +288,10 @@ async fn choose_workspace(
     let workspace = selection
         .into_path()
         .map_err(|error| format!("Unable to use the selected workspace: {error}"))?;
+    let _operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to start the workspace scan.".to_string())?;
     scan_authorized_workspace(
         workspace,
         &scanned_paths,
@@ -297,10 +310,15 @@ fn load_default_workspace(
     memory_edit_sessions: State<'_, MemoryEditSessions>,
     runtime_threads: State<'_, ScannedRuntimeThreads>,
     current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
 ) -> Result<Option<HarnessSnapshot>, String> {
     let Some(workspace) = std::env::var_os("HARNESS_LENS_WORKSPACE").map(PathBuf::from) else {
         return Ok(None);
     };
+    let _operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to start the workspace scan.".to_string())?;
     scan_authorized_workspace(
         workspace,
         &scanned_paths,
@@ -319,7 +337,12 @@ fn rescan_workspace(
     memory_edit_sessions: State<'_, MemoryEditSessions>,
     runtime_threads: State<'_, ScannedRuntimeThreads>,
     current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
 ) -> Result<HarnessSnapshot, String> {
+    let _operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to start the workspace scan.".to_string())?;
     let workspace = current_workspace
         .0
         .lock()
@@ -334,6 +357,189 @@ fn rescan_workspace(
         &runtime_threads,
         &current_workspace,
     )
+}
+
+fn authorized_workspace(current_workspace: &CurrentWorkspace) -> Result<PathBuf, String> {
+    current_workspace
+        .0
+        .lock()
+        .map_err(|_| "Unable to read the authorized workspace.".to_string())?
+        .clone()
+        .ok_or_else(|| "Choose a workspace before using snapshot history.".to_string())
+}
+
+fn snapshot_storage_root(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map_err(|error| format!("Unable to locate local snapshot storage: {error}"))
+}
+
+#[tauri::command]
+fn list_context_snapshots(
+    app: AppHandle,
+    current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
+    store_operations: State<'_, SnapshotStoreOperations>,
+) -> Result<Vec<snapshot_store::ContextSnapshotSummary>, String> {
+    let _workspace_operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to authorize reading snapshot history.".to_string())?;
+    let workspace = authorized_workspace(&current_workspace)?;
+    let _operation = store_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to read snapshot history.".to_string())?;
+    snapshot_store::list(&snapshot_storage_root(&app)?, &workspace)
+}
+
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+fn capture_context_snapshot(
+    app: AppHandle,
+    scanned_paths: State<'_, ScannedArtifactPaths>,
+    scanned_memories: State<'_, ScannedMemoryArtifacts>,
+    memory_edit_sessions: State<'_, MemoryEditSessions>,
+    runtime_threads: State<'_, ScannedRuntimeThreads>,
+    current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
+    store_operations: State<'_, SnapshotStoreOperations>,
+) -> Result<snapshot_store::ContextSnapshotCaptureResult, String> {
+    let _scan_operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to start the snapshot scan.".to_string())?;
+    let workspace = authorized_workspace(&current_workspace)?;
+    // A saved capture always starts from a fresh backend scan. The frontend cannot
+    // submit or persist its mutable copy of the live snapshot.
+    let live_snapshot = scan_authorized_workspace(
+        workspace.clone(),
+        &scanned_paths,
+        &scanned_memories,
+        &memory_edit_sessions,
+        &runtime_threads,
+        &current_workspace,
+    )?;
+    let _store_operation = store_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to store snapshot history.".to_string())?;
+    let storage_root = snapshot_storage_root(&app)?;
+    let result = snapshot_store::capture(&storage_root, &workspace, &live_snapshot);
+    Ok(match result {
+        Ok(outcome) => snapshot_store::ContextSnapshotCaptureResult {
+            live_snapshot,
+            captured: Some(outcome.captured),
+            history: outcome.history,
+            persistence_error: None,
+            storage_status: outcome.storage_status,
+        },
+        Err(error) => snapshot_store::ContextSnapshotCaptureResult {
+            live_snapshot,
+            captured: None,
+            history: snapshot_store::list(&storage_root, &workspace).unwrap_or_default(),
+            persistence_error: Some(error),
+            storage_status: snapshot_store::ContextSnapshotStorageStatus::default(),
+        },
+    })
+}
+
+#[tauri::command]
+fn load_context_snapshot(
+    app: AppHandle,
+    capture_id: String,
+    current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
+    store_operations: State<'_, SnapshotStoreOperations>,
+) -> Result<snapshot_store::StoredContextSnapshot, String> {
+    let _workspace_operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to authorize reading snapshot history.".to_string())?;
+    let workspace = authorized_workspace(&current_workspace)?;
+    let _operation = store_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to read snapshot history.".to_string())?;
+    snapshot_store::load(&snapshot_storage_root(&app)?, &workspace, &capture_id)
+}
+
+#[tauri::command]
+fn compare_context_snapshots(
+    app: AppHandle,
+    base_capture_id: String,
+    target_capture_id: String,
+    current_workspace: State<'_, CurrentWorkspace>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
+    store_operations: State<'_, SnapshotStoreOperations>,
+) -> Result<snapshot_store::ContextSnapshotComparison, String> {
+    let _workspace_operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to authorize comparing snapshot history.".to_string())?;
+    let workspace = authorized_workspace(&current_workspace)?;
+    let _operation = store_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to compare snapshot history.".to_string())?;
+    snapshot_store::compare(
+        &snapshot_storage_root(&app)?,
+        &workspace,
+        &base_capture_id,
+        &target_capture_id,
+    )
+}
+
+#[tauri::command]
+async fn clear_context_snapshot_history(
+    app: AppHandle,
+    current_workspace: State<'_, CurrentWorkspace>,
+    store_operations: State<'_, SnapshotStoreOperations>,
+    workspace_operations: State<'_, WorkspaceScanOperations>,
+) -> Result<snapshot_store::ContextSnapshotClearResult, String> {
+    let workspace = authorized_workspace(&current_workspace)?;
+    let workspace_name = workspace
+        .file_name()
+        .and_then(|value| value.to_str())
+        .map(safe_dialog_path)
+        .unwrap_or_else(|| "workspace".to_string());
+    let confirm_app = app.clone();
+    let confirmed = tauri::async_runtime::spawn_blocking(move || {
+        confirm_app
+            .dialog()
+            .message(format!(
+                "永久清空此工作区的本地快照历史？\n{workspace_name}\n\nPermanently clear local snapshot history for this workspace?\n{workspace_name}"
+            ))
+            .title("清空快照历史 / Clear snapshot history")
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "清空 / Clear".to_string(),
+                "取消 / Cancel".to_string(),
+            ))
+            .blocking_show()
+    })
+    .await
+    .map_err(|error| format!("Unable to show the clear-history confirmation: {error}"))?;
+    if !confirmed {
+        return Ok(snapshot_store::ContextSnapshotClearResult { cleared: false });
+    }
+    let _workspace_operation = workspace_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to authorize clearing snapshot history.".to_string())?;
+    let active_workspace = authorized_workspace(&current_workspace)?;
+    if active_workspace != workspace {
+        return Err("The selected workspace changed before history was cleared.".to_string());
+    }
+    let _operation = store_operations
+        .0
+        .lock()
+        .map_err(|_| "Unable to clear snapshot history.".to_string())?;
+    let active_workspace = authorized_workspace(&current_workspace)?;
+    if active_workspace != workspace {
+        return Err("The selected workspace changed before history was cleared.".to_string());
+    }
+    snapshot_store::clear(&snapshot_storage_root(&app)?, &workspace)?;
+    Ok(snapshot_store::ContextSnapshotClearResult { cleared: true })
 }
 
 #[tauri::command]
@@ -651,12 +857,19 @@ pub fn run() {
         .manage(MemoryEditSessions::default())
         .manage(ScannedRuntimeThreads::default())
         .manage(CurrentWorkspace::default())
+        .manage(WorkspaceScanOperations::default())
+        .manage(SnapshotStoreOperations::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             choose_workspace,
             load_default_workspace,
             rescan_workspace,
+            list_context_snapshots,
+            capture_context_snapshot,
+            load_context_snapshot,
+            compare_context_snapshots,
+            clear_context_snapshot_history,
             inspect_runtime,
             load_runtime_run,
             load_memory_artifact,

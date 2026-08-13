@@ -15,3 +15,4 @@ Current screenshots:
 
 - `overview.png` and `runs.png`: English synthetic demo.
 - `overview-zh.png` and `runs-zh.png`: Chinese synthetic demo.
+- `snapshot-compare.png`: English synthetic v0.4 snapshot history and comparison.

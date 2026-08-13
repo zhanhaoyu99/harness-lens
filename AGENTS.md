@@ -12,7 +12,7 @@
 
 - Keep scanning and provider normalization in the Tauri/Rust backend; React code must not know provider-specific paths.
 - Provider-specific behavior belongs behind adapters so Codex and Claude can evolve independently.
-- The app is read-only by default. The only write capability is an explicit, confirmed edit of an existing scanned Memory Markdown file; Rules, Skills, Hooks, Agents, Config, runtime history, rename, create, and delete operations remain read-only.
+- Harness sources are read-only by default. Their only write capability is an explicit, confirmed edit of an existing scanned Memory Markdown file; Rules, Skills, Hooks, Agents, Config, runtime history, rename, create, and delete operations remain read-only. Separately, an explicit Capture may write metadata-only snapshot records to app-managed storage, and a native-confirmed clear action may delete only that workspace's records.
 - Frontend filesystem access must go through narrow Tauri commands rather than broad filesystem permissions.
 - Add fixture-based tests for every newly supported config or trace format.
 - Run `pnpm test`, `pnpm build`, and `cargo test --manifest-path src-tauri/Cargo.toml` after relevant changes.

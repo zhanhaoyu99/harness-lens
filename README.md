@@ -40,6 +40,8 @@ All screenshots below use synthetic data. The browser demo cannot read local fil
 
 ![Read-only Codex Run Flight Recorder with a linear turn and evidence replay](docs/assets/runs.png)
 
+![Metadata-only saved Harness history and Saved-to-Saved comparison](docs/assets/snapshot-compare.png)
+
 ## What works today
 
 - Scan a selected workspace plus known user-level Codex and Claude Harness locations.
@@ -50,11 +52,21 @@ All screenshots below use synthetic data. The browser demo cannot read local fil
 - Load Memory text only when requested and explicitly edit eligible project or user-maintained Memory Markdown files with conflict detection and confirmation.
 - Connect to the experimental Codex App Server for current skills/hooks and recent workspace threads.
 - Replay a Codex thread as a linear, metadata-only sequence of turns and item types.
+- Explicitly capture an immutable, metadata-only Harness snapshot without turning ordinary workspace scans into history.
+- Reopen the latest 50 captures for a workspace and compare two saved snapshots for observed configuration changes.
 - Copy an aggregate-only Markdown snapshot that excludes file contents and absolute paths.
 - Switch between English and Chinese; the first launch follows the system language.
 - Run the filesystem scan headlessly without opening the desktop app.
 
 The run recorder normalizes allowlisted metadata. It does not display raw prompts, tool arguments, model reasoning, or file diffs.
+
+## v0.4.0 scope
+
+v0.4.0 is focused on **local Harness revision history**, not run evaluation. Choosing a workspace or using Rescan continues to update only the live view and does not write history. When the user explicitly chooses Capture, the backend performs a fresh scan and atomically saves a capture referencing an immutable, content-addressed, metadata-only snapshot. History stays isolated by workspace, retains the latest 50 explicit captures, and includes an explicitly confirmed action for clearing that workspace's history.
+
+The Compare page compares two **saved** snapshots from the same workspace. It explains observed additions, removals, content-hash changes, resolution changes, and diagnostic changes while keeping incomplete scans visibly qualified. Persisted history excludes Harness file content and previews, raw Memory text, absolute paths, prompts, reasoning, tool arguments, file diffs, and raw runtime responses.
+
+This scope does not bind a Codex run to a snapshot. Existing and newly listed runs will continue to show that Harness context was not captured; Harness Lens will not infer a binding from the nearest scan time. Adapter-backed execution-time capture remains later M2 work.
 
 ## Install
 
@@ -63,7 +75,7 @@ The run recorder normalizes allowlisted metadata. It does not display raw prompt
 The current distribution targets **Apple Silicon (macOS arm64, macOS 11+)**. Download the `.dmg` and its checksum from [GitHub Releases](https://github.com/zhanhaoyu99/harness-lens/releases), then verify it:
 
 ```bash
-shasum -a 256 -c Harness-Lens_0.3.0_aarch64.dmg.sha256
+shasum -a 256 -c Harness-Lens_0.4.0_aarch64.dmg.sha256
 ```
 
 Current release artifacts are ad-hoc signed and **not notarized by Apple**. Gatekeeper may warn or block the app. Only open it through macOS Privacy & Security after verifying the checksum and deciding that you trust this project. Building from source is the safest option while notarization is pending.
@@ -75,7 +87,7 @@ Requirements:
 - macOS 11 or later on Apple Silicon
 - Node.js 22+
 - pnpm 11
-- stable Rust with `rustfmt` and `clippy`
+- Rust 1.88 or later with `rustfmt` and `clippy`
 - Xcode Command Line Tools
 
 ```bash
@@ -126,6 +138,8 @@ Treat all previews and screenshots as potentially sensitive. Review anything bef
 ## Project status
 
 Harness Lens is an early, actively maintained open-source project. The current release supports local inspection, scoped Memory management, and Codex run forensics, but it does not yet bind a historical run to an immutable Harness snapshot, calculate trustworthy per-run cost, or judge task success.
+
+v0.4.0 adds metadata-only snapshot history plus Saved-to-Saved Harness comparison. It does not close the run-binding or verifier evidence gaps.
 
 The roadmap prioritizes those evidence boundaries over adding orchestration features. See [Roadmap](docs/ROADMAP.md), [Product direction](docs/PRODUCT.md), [Architecture](docs/ARCHITECTURE.md), and the [versioned compatibility evidence](docs/COMPATIBILITY.md).
 

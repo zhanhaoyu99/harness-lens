@@ -345,16 +345,46 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the capture_context_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-capture-context-snapshot",
+          "markdownDescription": "Enables the capture_context_snapshot command without any pre-configured scope."
+        },
+        {
           "description": "Enables the choose_workspace command without any pre-configured scope.",
           "type": "string",
           "const": "allow-choose-workspace",
           "markdownDescription": "Enables the choose_workspace command without any pre-configured scope."
         },
         {
+          "description": "Enables the clear_context_snapshot_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-clear-context-snapshot-history",
+          "markdownDescription": "Enables the clear_context_snapshot_history command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the compare_context_snapshots command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-compare-context-snapshots",
+          "markdownDescription": "Enables the compare_context_snapshots command without any pre-configured scope."
+        },
+        {
           "description": "Enables the inspect_runtime command without any pre-configured scope.",
           "type": "string",
           "const": "allow-inspect-runtime",
           "markdownDescription": "Enables the inspect_runtime command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the list_context_snapshots command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-list-context-snapshots",
+          "markdownDescription": "Enables the list_context_snapshots command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the load_context_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-load-context-snapshot",
+          "markdownDescription": "Enables the load_context_snapshot command without any pre-configured scope."
         },
         {
           "description": "Enables the load_default_workspace command without any pre-configured scope.",
@@ -393,16 +423,46 @@
           "markdownDescription": "Enables the save_memory_artifact command without any pre-configured scope."
         },
         {
+          "description": "Denies the capture_context_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-capture-context-snapshot",
+          "markdownDescription": "Denies the capture_context_snapshot command without any pre-configured scope."
+        },
+        {
           "description": "Denies the choose_workspace command without any pre-configured scope.",
           "type": "string",
           "const": "deny-choose-workspace",
           "markdownDescription": "Denies the choose_workspace command without any pre-configured scope."
         },
         {
+          "description": "Denies the clear_context_snapshot_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-clear-context-snapshot-history",
+          "markdownDescription": "Denies the clear_context_snapshot_history command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the compare_context_snapshots command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-compare-context-snapshots",
+          "markdownDescription": "Denies the compare_context_snapshots command without any pre-configured scope."
+        },
+        {
           "description": "Denies the inspect_runtime command without any pre-configured scope.",
           "type": "string",
           "const": "deny-inspect-runtime",
           "markdownDescription": "Denies the inspect_runtime command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_context_snapshots command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-list-context-snapshots",
+          "markdownDescription": "Denies the list_context_snapshots command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the load_context_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-load-context-snapshot",
+          "markdownDescription": "Denies the load_context_snapshot command without any pre-configured scope."
         },
         {
           "description": "Denies the load_default_workspace command without any pre-configured scope.",
@@ -451,6 +511,12 @@
           "type": "string",
           "const": "harness-read",
           "markdownDescription": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist."
+        },
+        {
+          "description": "Allows an explicit fresh Harness capture to be stored locally and an explicitly confirmed clear of the selected workspace history.",
+          "type": "string",
+          "const": "harness-snapshot-write",
+          "markdownDescription": "Allows an explicit fresh Harness capture to be stored locally and an explicitly confirmed clear of the selected workspace history."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

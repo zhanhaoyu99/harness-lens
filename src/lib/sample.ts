@@ -3,7 +3,9 @@ import type {
   CodexRuntimeSnapshot,
   HarnessArtifact,
   HarnessSnapshot,
+  StoredContextSnapshot,
 } from "../types";
+import { safeStoredSnapshot } from "./snapshots";
 
 const workspace = "/Users/developer/Projects/mobile-app";
 
@@ -156,6 +158,65 @@ export const sampleSnapshot: HarnessSnapshot = {
     },
   ],
 };
+
+const samplePreviousSnapshot: HarnessSnapshot = {
+  ...sampleSnapshot,
+  scannedAt: "2026-08-10T09:25:00Z",
+  artifacts: [
+    ...sampleSnapshot.artifacts
+      .filter((item) => item.id !== "workflow")
+      .map((item) => {
+        if (item.id === "rule-repo") {
+          return {
+            ...item,
+            contentHash: "b".repeat(64),
+            content: "# Project guidance\n\n- Run focused tests after implementation.",
+          };
+        }
+        if (item.id === "hooks") {
+          return {
+            ...item,
+            resolution: "defined" as const,
+            resolutionReason: "Discovered; live hook status requires the Codex runtime adapter.",
+          };
+        }
+        return item;
+      }),
+    artifact({
+      id: "legacy-config",
+      name: "Legacy agent config",
+      kind: "config",
+      provider: "codex",
+      scope: "repo",
+      path: `${workspace}/.codex/legacy.toml`,
+      resolution: "defined",
+      content: "enabled = false\n",
+      contentHash: "c".repeat(64),
+      resolutionReason: "Discovered in the selected workspace.",
+    }),
+  ],
+};
+
+const sampleOldestSnapshot: HarnessSnapshot = {
+  ...samplePreviousSnapshot,
+  gitBranch: "main",
+  scannedAt: "2026-08-09T08:10:00Z",
+  artifacts: samplePreviousSnapshot.artifacts.filter((item) => item.id !== "skill-qa-claude"),
+};
+
+function storedSample(id: string, snapshot: HarnessSnapshot): StoredContextSnapshot {
+  return safeStoredSnapshot(`${id}-capture`, id, snapshot);
+}
+
+export const sampleStoredContextSnapshots: StoredContextSnapshot[] = [
+  storedSample("demo-snapshot-current", sampleSnapshot),
+  storedSample("demo-snapshot-previous", samplePreviousSnapshot),
+  storedSample("demo-snapshot-oldest", sampleOldestSnapshot),
+];
+
+export const sampleContextSnapshotHistory = sampleStoredContextSnapshots.map(
+  (item) => item.summary,
+);
 
 export const sampleRuntimeSnapshot: CodexRuntimeSnapshot = {
   state: "connected",

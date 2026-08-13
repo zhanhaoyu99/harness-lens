@@ -62,6 +62,14 @@ jobs:
       - name: Run Rust tests
         run: pnpm rust:test
 
+      - name: Verify minimum supported Rust
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.88.0 --profile minimal
+          toolchain_bin="$(dirname "$(rustup which --toolchain 1.88.0 rustc)")"
+          RUSTC="$toolchain_bin/rustc" RUSTDOC="$toolchain_bin/rustdoc" \
+            "$toolchain_bin/cargo" test --manifest-path src-tauri/Cargo.toml --locked
+
       - name: Audit production JavaScript dependencies
         run: pnpm audit --prod
 

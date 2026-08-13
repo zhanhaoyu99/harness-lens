@@ -37,12 +37,26 @@ Known evidence gap: current runtime declarations and historical thread activity 
 - [x] Keep provider, scope, type, search, List, Map, result counts, and warning navigation consistent.
 - [x] Keep every page and sidebar destination reachable at the minimum supported window size.
 
-## M2 — Reproducible context snapshots
+## v0.4 — Local snapshot history and Saved-to-Saved compare
 
-- Persist immutable, content-addressed Harness snapshots locally.
-- Bind new runs to the effective snapshot captured at execution time.
-- Record adapter and CLI compatibility versions.
-- Explain additions, removals, shadowing, duplicates, and resolution changes between snapshots.
+- [x] Keep workspace selection and ordinary Rescan operations live-only; they must not write snapshot history.
+- [x] Provide an explicit Capture action whose backend performs a fresh scan and atomically persists a capture referencing an immutable, content-addressed, metadata-only Harness snapshot.
+- [x] Keep capture history isolated by workspace and retain the latest 50 explicit captures for each workspace.
+- [x] Provide an explicitly confirmed action for clearing the selected workspace's saved history.
+- [x] Record explicit local schema, Harness Lens, and scanner compatibility versions with saved snapshot evidence; reserve runtime-adapter versioning for later run binding.
+- [x] Compare two saved snapshots from the same workspace for observed additions, removals, content-hash changes, resolution changes, and duplicate or same-name diagnostic changes.
+- [x] Preserve incomplete-scan state in history and qualify absence-based comparison claims when either side is incomplete.
+- [x] Exclude Harness content and previews, raw Memory text, absolute paths, and raw runtime data from persisted snapshot history.
+
+Exit criterion: after a workspace changes, a user can reopen Harness Lens and explain the saved metadata differences between two explicit capture points without relying on mutable current files.
+
+Evidence boundary: v0.4 compares Saved-to-Saved Harness context only. It does not bind a run to either snapshot, compare outcomes, or infer that the nearest capture was active for a run.
+
+## M2 continuation — Reproducible run context
+
+- Bind new runs only to an effective snapshot captured through an adapter-backed execution-time boundary.
+- Record the provider CLI/runtime compatibility version at that binding point.
+- Explain the defined graph versus observed path without deriving a graph from a linear trace.
 - Add a privacy-reviewed export format with explicit schema versioning.
 
 Exit criterion: a user can explain the exact known context for a newly captured run without relying on mutable current files.
