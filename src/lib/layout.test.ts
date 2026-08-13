@@ -21,4 +21,14 @@ describe("responsive shell layout contract", () => {
     expect(ruleFor(".sidebar")).toContain("min-height: 0");
     expect(ruleFor(".sidebar")).toContain("overflow-y: auto");
   });
+
+  it("collapses snapshot history and comparison into one column on narrow windows", () => {
+    expect(ruleFor(".compare-workbench")).toContain("minmax(270px,320px)");
+    expect(styles).toMatch(
+      /@media \(max-width: 1100px\)[\s\S]*?\.compare-workbench\s*\{\s*grid-template-columns:\s*1fr/,
+    );
+    expect(styles).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.snapshot-pair-controls\s*\{\s*grid-template-columns:/,
+    );
+  });
 });

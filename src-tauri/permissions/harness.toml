@@ -5,6 +5,9 @@ commands.allow = [
   "choose_workspace",
   "load_default_workspace",
   "rescan_workspace",
+  "list_context_snapshots",
+  "load_context_snapshot",
+  "compare_context_snapshots",
   "inspect_runtime",
   "load_runtime_run",
   "load_memory_artifact",
@@ -15,3 +18,8 @@ commands.allow = [
 identifier = "harness-memory-edit"
 description = "Allows an explicit, confirmed save to an editable Markdown Memory artifact from the current scan allowlist."
 commands.allow = ["save_memory_artifact"]
+
+[[permission]]
+identifier = "harness-snapshot-write"
+description = "Allows an explicit fresh Harness capture to be stored locally and an explicitly confirmed clear of the selected workspace history."
+commands.allow = ["capture_context_snapshot", "clear_context_snapshot_history"]

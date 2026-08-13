@@ -44,7 +44,22 @@ The Share view is intentionally aggregate-only and excludes file contents and ab
 
 ## Local persistence
 
-The current release does not maintain a cloud database. Browser/UI state and normal operating-system caches may exist locally. Future local snapshot persistence will require an explicit retention and deletion design before release.
+The published v0.3 release does not maintain a Harness Lens database. Browser/UI state and normal operating-system caches may exist locally.
+
+The v0.4 candidate adds app-managed local history only when the user explicitly chooses Capture. Choosing a workspace or using Rescan updates the live view without writing history. On Capture, the backend performs a fresh scan and atomically creates a workspace-scoped capture that references an immutable, content-addressed, metadata-only snapshot; it does not persist a snapshot object supplied by the frontend. The persisted projection may include workspace and artifact display names, Git branch, safe relative source labels, provider, kind, scope, content hashes, sizes, resolution states, normalized diagnostics, capture time, completeness, and compatibility versions. These metadata can still reveal project structure or change patterns, so the local store should be treated as sensitive developer data.
+
+The v0.4 persisted projection must not include:
+
+- Harness file content or redacted previews;
+- raw Memory text;
+- absolute paths;
+- prompts, model reasoning, tool arguments, file diffs, or raw runtime responses.
+
+History is isolated by workspace and its index keeps the latest 50 explicit captures for each workspace. Ordinary live scans do not count toward retention. Metadata objects no longer referenced by those captures are deleted on a best-effort basis; failed cleanup is surfaced after a successful capture and retried on later store access, so expired metadata can remain locally until cleanup succeeds. A process crash can also leave an app-managed transaction file until the store is inspected or the application data is removed. The user can clear the selected workspace's remaining history only through an explicitly confirmed action. Clearing app data or capture history does not guarantee removal from operating-system backups, filesystem snapshots, or forensic storage.
+
+Saved history remains local: v0.4 adds no cloud sync, telemetry, automatic export, or network upload. The browser demo uses synthetic snapshot history and cannot access the desktop store.
+
+Two saved snapshots from the same workspace can be compared, but they are not file backups and cannot restore historical content. A nearby capture timestamp does not prove that a snapshot was active for a Codex run; v0.4 persists no run-to-snapshot binding.
 
 ## Workspace boundaries
 

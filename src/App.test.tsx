@@ -2,11 +2,12 @@
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe("Harness source filters", () => {
@@ -45,5 +46,33 @@ describe("Harness source filters", () => {
     );
     expect(screen.getByRole("status")).toHaveTextContent("1 / 9 items");
     expect(screen.getByRole("row", { name: "Inspect qa" })).toHaveTextContent("Codex");
+  });
+
+  it("loads saved snapshot metadata without replacing the live inventory", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+    expect(screen.getByRole("heading", { name: "Snapshot History & Compare" })).toBeInTheDocument();
+
+    const savedSnapshots = screen.getAllByRole("button", { name: /Inspect saved metadata/ });
+    fireEvent.click(savedSnapshots[savedSnapshots.length - 1]);
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+
+    expect(screen.getByRole("row", { name: "Inspect unattended-issue-dev" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("9 / 9 items");
+  });
+
+  it("keeps synthetic history when clear confirmation is cancelled", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+    expect(screen.getAllByRole("button", { name: /Inspect saved metadata/ })).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
+
+    expect(confirm).toHaveBeenCalledWith(
+      "Permanently clear the saved snapshot history for this workspace?",
+    );
+    expect(screen.getAllByRole("button", { name: /Inspect saved metadata/ })).toHaveLength(3);
   });
 });

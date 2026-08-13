@@ -4,11 +4,30 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 ## [Unreleased]
 
-### Planned
+### Added for 0.4.0
 
-- Immutable context snapshots bound to runs.
+- Keep ordinary workspace selection and Rescan operations live-only, without writing snapshot history.
+- Add an explicit Capture action that performs a fresh backend scan and atomically persists a capture referencing an immutable, content-addressed, metadata-only Harness snapshot.
+- Keep the latest 50 explicit capture records for each workspace and provide an explicitly confirmed action for clearing that workspace's history.
+- Enable Saved-to-Saved comparison within one workspace for observed additions, removals, content-hash changes, resolution changes, and diagnostic changes.
+- Record schema and compatibility metadata with every saved snapshot while keeping incomplete-scan evidence visible in history and comparison.
+
+### Evidence and privacy boundaries
+
+- Persisted snapshots exclude Harness file content and previews, raw Memory text, absolute paths, prompts, reasoning, tool arguments, file diffs, and raw runtime responses.
+- v0.4.0 compares saved Harness context only. It does not bind current or historical runs to a snapshot, compare run outcomes, or infer that the nearest snapshot was active for a run.
+- A Saved-to-Saved difference is configuration evidence, not verifier evidence or proof that either task result succeeded.
+
+### Security
+
+- Serialize snapshot-store access across app processes, reject symbolic-link store directories, verify content-addressed objects before use, and roll back uncommitted objects when an index write fails.
+- Surface post-commit durability and expired-metadata cleanup warnings without misreporting a committed capture as failed; retry pending cleanup on later access.
+
+### Deferred beyond 0.4.0
+
+- Adapter-backed execution-time snapshot binding for newly captured runs.
 - Verifier evidence and evaluation outcomes.
-- Trustworthy comparison of Harness revisions and failure modes.
+- Trustworthy comparison of success rates, costs, duration, and failure modes across bound Harness revisions.
 - Notarized and broader macOS distribution.
 
 ## [0.3.0] - 2026-08-12

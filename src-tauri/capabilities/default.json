@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Capabilities for the main Harness Lens window",
   "windows": ["main"],
-  "permissions": ["harness-read", "harness-memory-edit"]
+  "permissions": ["harness-read", "harness-memory-edit", "harness-snapshot-write"]
 }

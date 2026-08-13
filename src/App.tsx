@@ -17,13 +17,13 @@ import {
   RefreshCw,
   Search,
   Share2,
-  Sparkles,
 } from "lucide-react";
 import { HarnessMap, type MapFilter } from "./components/HarnessMap";
 import { HarnessTable } from "./components/HarnessTable";
 import { Inspector, type LoadedMemoryState } from "./components/Inspector";
 import { RuntimeRuns } from "./components/RuntimeRuns";
 import { ShareSnapshot } from "./components/ShareSnapshot";
+import { SnapshotCompare } from "./components/SnapshotCompare";
 import {
   counterpartDifferenceCount,
   effectiveCount,
@@ -38,14 +38,22 @@ import {
   type Language,
 } from "./lib/i18n";
 import {
+  sampleContextSnapshotHistory,
   sampleRunDetail,
   sampleRuntimeSnapshot,
   sampleSnapshot,
+  sampleStoredContextSnapshots,
 } from "./lib/sample";
+import { compareStoredSnapshots, safeStoredSnapshot } from "./lib/snapshots";
 import {
+  captureContextSnapshot,
   chooseWorkspace,
+  clearContextSnapshotHistory,
+  compareContextSnapshots,
   inspectRuntime,
   isTauriRuntime,
+  listContextSnapshots,
+  loadContextSnapshot,
   loadDefaultWorkspace,
   loadMemoryArtifact,
   loadRuntimeRun,
@@ -56,6 +64,8 @@ import {
 import type {
   CodexRunDetail,
   CodexRuntimeSnapshot,
+  ContextSnapshotComparison,
+  ContextSnapshotSummary,
   ExplorerMode,
   HarnessArtifact,
   HarnessKind,
@@ -64,6 +74,7 @@ import type {
   HarnessSnapshot,
   MemorySaveError,
   PrimarySection,
+  StoredContextSnapshot,
 } from "./types";
 
 const navItems: Array<{
@@ -74,7 +85,7 @@ const navItems: Array<{
   { id: "overview", icon: LayoutDashboard },
   { id: "items", icon: FileSearch },
   { id: "runs", icon: Activity },
-  { id: "compare", icon: GitCompareArrows, planned: true },
+  { id: "compare", icon: GitCompareArrows },
   { id: "share", icon: Share2 },
 ];
 
@@ -140,34 +151,6 @@ function EmptyWorkspace({
   );
 }
 
-function FutureSection({
-  section,
-  language,
-}: {
-  section: "compare";
-  language: Language;
-}) {
-  const copy = messages[language].future;
-  const content = {
-    compare: {
-      ...copy.compare,
-      icon: GitCompareArrows,
-    },
-  }[section];
-  const Icon = content.icon;
-  return (
-    <div className="future-section">
-      <div className="future-icon"><Icon size={28} /></div>
-      <span className="eyebrow">{copy.eyebrow}</span>
-      <h2>{content.title}</h2>
-      <p>{content.body}</p>
-      <div className="future-contract">
-        <Sparkles size={16} /> {copy.contract}
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const tauri = isTauriRuntime();
   const initialSampleRunId = sampleRuntimeSnapshot.runs[0]?.id ?? null;
@@ -197,11 +180,45 @@ export default function App() {
   const [memorySaving, setMemorySaving] = useState(false);
   const [memoryError, setMemoryError] = useState<string | null>(null);
   const [memoryFeedback, setMemoryFeedback] = useState<"saved" | "savedRefreshFailed" | "cancelled" | "discarded" | null>(null);
+  const [snapshotHistory, setSnapshotHistory] = useState<ContextSnapshotSummary[]>(
+    tauri ? [] : sampleContextSnapshotHistory,
+  );
+  const [baseCaptureId, setBaseCaptureId] = useState(
+    tauri ? "" : (sampleContextSnapshotHistory[1]?.captureId ?? ""),
+  );
+  const [targetCaptureId, setTargetCaptureId] = useState(
+    tauri ? "" : (sampleContextSnapshotHistory[0]?.captureId ?? ""),
+  );
+  const [snapshotComparison, setSnapshotComparison] = useState<ContextSnapshotComparison | null>(
+    tauri
+      ? null
+      : compareStoredSnapshots(sampleStoredContextSnapshots[1], sampleStoredContextSnapshots[0]),
+  );
+  const [inspectedContextSnapshot, setInspectedContextSnapshot] = useState<StoredContextSnapshot | null>(
+    tauri ? null : sampleStoredContextSnapshots[0],
+  );
+  const [snapshotHistoryLoading, setSnapshotHistoryLoading] = useState(false);
+  const [snapshotCapturing, setSnapshotCapturing] = useState(false);
+  const [snapshotComparing, setSnapshotComparing] = useState(false);
+  const [contextSnapshotLoading, setContextSnapshotLoading] = useState(false);
+  const [snapshotHistoryClearing, setSnapshotHistoryClearing] = useState(false);
+  const [snapshotHistoryFeedback, setSnapshotHistoryFeedback] = useState<"captured" | "cleared" | null>(null);
+  const [snapshotHistoryWarning, setSnapshotHistoryWarning] = useState<string | null>(null);
+  const [snapshotHistoryError, setSnapshotHistoryError] = useState<string | null>(null);
   const activeMemorySaveSequence = useRef<number | null>(null);
   const runLoadSequence = useRef(0);
   const memoryLoadSequence = useRef(0);
   const memoryMutationSequence = useRef(0);
   const scanSequence = useRef(0);
+  const runtimeScanSequence = useRef(0);
+  const activeRuntimeWorkspacePath = useRef<string | null>(
+    tauri ? null : sampleSnapshot.workspacePath,
+  );
+  const snapshotHistorySequence = useRef(0);
+  const contextSnapshotLoadSequence = useRef(0);
+  const snapshotCaptureSequence = useRef(0);
+  const snapshotComparisonSequence = useRef(0);
+  const syntheticSnapshots = useRef<StoredContextSnapshot[]>(sampleStoredContextSnapshots);
   const copy = messages[language];
 
   function clearLoadedMemory() {
@@ -212,6 +229,81 @@ export default function App() {
     setMemorySaving(false);
     setMemoryError(null);
     setMemoryFeedback(null);
+  }
+
+  function resetRuntimeForWorkspace(workspacePath: string) {
+    activeRuntimeWorkspacePath.current = workspacePath;
+    runtimeScanSequence.current += 1;
+    runLoadSequence.current += 1;
+    setRuntimeSnapshot(null);
+    setRuntimeLoading(false);
+    setSelectedRunId(null);
+    setRunDetail(null);
+    setRunLoading(false);
+    setRuntimeError(null);
+  }
+
+  function suspendRuntimeForWorkspaceScan(): number {
+    activeRuntimeWorkspacePath.current = null;
+    runtimeScanSequence.current += 1;
+    runLoadSequence.current += 1;
+    setRuntimeLoading(true);
+    setRunLoading(false);
+    setRuntimeError(null);
+    return runtimeScanSequence.current;
+  }
+
+  function resetSnapshotHistoryUi() {
+    snapshotHistorySequence.current += 1;
+    contextSnapshotLoadSequence.current += 1;
+    snapshotCaptureSequence.current += 1;
+    snapshotComparisonSequence.current += 1;
+    setSnapshotHistory([]);
+    setBaseCaptureId("");
+    setTargetCaptureId("");
+    setSnapshotComparison(null);
+    setInspectedContextSnapshot(null);
+    setSnapshotHistoryLoading(false);
+    setContextSnapshotLoading(false);
+    setSnapshotCapturing(false);
+    setSnapshotComparing(false);
+    setSnapshotHistoryClearing(false);
+    setSnapshotHistoryFeedback(null);
+    setSnapshotHistoryWarning(null);
+    setSnapshotHistoryError(null);
+  }
+
+  function applySnapshotHistory(
+    nextHistory: ContextSnapshotSummary[],
+    preferredTargetId?: string,
+    preferredBaseId?: string,
+  ) {
+    contextSnapshotLoadSequence.current += 1;
+    snapshotComparisonSequence.current += 1;
+    const sorted = [...nextHistory].sort(
+      (left, right) => right.capturedAt.localeCompare(left.capturedAt),
+    );
+    const hasCapture = (captureId: string | undefined) =>
+      Boolean(captureId && sorted.some((item) => item.captureId === captureId));
+    const nextTarget = hasCapture(preferredTargetId)
+      ? preferredTargetId!
+      : hasCapture(targetCaptureId)
+        ? targetCaptureId
+        : (sorted[0]?.captureId ?? "");
+    const nextBase = hasCapture(preferredBaseId) && preferredBaseId !== nextTarget
+      ? preferredBaseId!
+      : hasCapture(baseCaptureId) && baseCaptureId !== nextTarget
+        ? baseCaptureId
+        : (sorted.find((item) => item.captureId !== nextTarget)?.captureId ?? "");
+
+    setSnapshotHistory(sorted);
+    setBaseCaptureId(nextBase);
+    setTargetCaptureId(nextTarget);
+    setSnapshotComparison(null);
+    setInspectedContextSnapshot(null);
+    setSnapshotHistoryLoading(false);
+    setContextSnapshotLoading(false);
+    setSnapshotComparing(false);
   }
 
   function confirmUnsavedMemoryLoss(): boolean {
@@ -231,24 +323,31 @@ export default function App() {
     if (!unsavedConfirmed && !confirmUnsavedMemoryLoss()) return;
     memoryMutationSequence.current += 1;
     const operation = ++scanSequence.current;
+    const previousWorkspacePath = snapshot?.workspacePath ?? activeRuntimeWorkspacePath.current;
+    suspendRuntimeForWorkspaceScan();
     clearLoadedMemory();
     setScanning(true);
     setError(null);
     try {
       const result = await loader();
       if (operation !== scanSequence.current) return;
-      if (!result) return;
-      runLoadSequence.current += 1;
-      setRuntimeSnapshot(null);
-      setSelectedRunId(null);
-      setRunDetail(null);
-      setRuntimeError(null);
+      if (!result) {
+        activeRuntimeWorkspacePath.current = previousWorkspacePath;
+        setRuntimeLoading(false);
+        return;
+      }
+      resetRuntimeForWorkspace(result.workspacePath);
+      if (snapshot?.workspacePath !== result.workspacePath) {
+        resetSnapshotHistoryUi();
+      }
       setSnapshot(result);
       setSelectedArtifactId(null);
       setMapFilter({});
-      await performRuntimeScan();
+      await performRuntimeScan(result.workspacePath);
     } catch (scanError) {
       if (operation === scanSequence.current) {
+        activeRuntimeWorkspacePath.current = previousWorkspacePath;
+        setRuntimeLoading(false);
         setError(scanError instanceof Error ? scanError.message : String(scanError));
       }
     } finally {
@@ -256,7 +355,13 @@ export default function App() {
     }
   }
 
-  async function performRuntimeScan() {
+  async function performRuntimeScan(workspacePath: string) {
+    if (activeRuntimeWorkspacePath.current !== workspacePath) return;
+    const operation = ++runtimeScanSequence.current;
+    const operationIsCurrent = () => (
+      operation === runtimeScanSequence.current
+      && workspacePath === activeRuntimeWorkspacePath.current
+    );
     setRuntimeLoading(true);
     setRuntimeError(null);
     setSelectedRunId(null);
@@ -264,11 +369,13 @@ export default function App() {
     runLoadSequence.current += 1;
     try {
       const result = await inspectRuntime();
+      if (!operationIsCurrent()) return;
       setRuntimeSnapshot(result);
       if (result.state !== "connected" && result.message) {
         setRuntimeError(result.message);
       }
     } catch (runtimeScanError) {
+      if (!operationIsCurrent()) return;
       const message = runtimeScanError instanceof Error
         ? runtimeScanError.message
         : String(runtimeScanError);
@@ -283,7 +390,7 @@ export default function App() {
         runs: [],
       });
     } finally {
-      setRuntimeLoading(false);
+      if (operationIsCurrent()) setRuntimeLoading(false);
     }
   }
 
@@ -312,7 +419,7 @@ export default function App() {
 
   function handleRefreshRuntime() {
     if (tauri && snapshot) {
-      void performRuntimeScan();
+      void performRuntimeScan(snapshot.workspacePath);
       return;
     }
     setRuntimeSnapshot(sampleRuntimeSnapshot);
@@ -419,6 +526,29 @@ export default function App() {
       cancelled = true;
     };
   }, [tauri]);
+
+  useEffect(() => {
+    if (!tauri || !snapshot?.workspacePath) return;
+    const operation = ++snapshotHistorySequence.current;
+    setSnapshotHistoryLoading(true);
+    setSnapshotHistoryError(null);
+    setSnapshotHistoryFeedback(null);
+    setSnapshotHistoryWarning(null);
+    void listContextSnapshots()
+      .then((history) => {
+        if (operation === snapshotHistorySequence.current) applySnapshotHistory(history);
+      })
+      .catch((historyError) => {
+        if (operation === snapshotHistorySequence.current) {
+          setSnapshotHistoryError(
+            historyError instanceof Error ? historyError.message : String(historyError),
+          );
+        }
+      })
+      .finally(() => {
+        if (operation === snapshotHistorySequence.current) setSnapshotHistoryLoading(false);
+      });
+  }, [tauri, snapshot?.workspacePath]);
 
   const filteredArtifacts = useMemo(
     () =>
@@ -549,6 +679,9 @@ export default function App() {
       }
       if (!nextSnapshot || refreshSequence !== memoryMutationSequence.current) return;
 
+      if (activeRuntimeWorkspacePath.current !== nextSnapshot.workspacePath) {
+        resetRuntimeForWorkspace(nextSnapshot.workspacePath);
+      }
       setSnapshot(nextSnapshot);
       setSelectedArtifactId(result.artifactId);
       try {
@@ -607,6 +740,208 @@ export default function App() {
     if (!tauri) return;
     if (!confirmUnsavedMemoryLoss()) return;
     await performScan(() => chooseWorkspace(copy.workspace.chooseDialogTitle), true);
+  }
+
+  async function handleCaptureContextSnapshot() {
+    if (
+      !snapshot
+      || snapshotCapturing
+      || snapshotHistoryClearing
+      || scanning
+      || memorySaving
+    ) return;
+    if (!confirmUnsavedMemoryLoss()) return;
+    const runtimeWorkspacePath = snapshot.workspacePath;
+    const suspendedRuntimeOperation = tauri
+      ? suspendRuntimeForWorkspaceScan()
+      : null;
+    memoryMutationSequence.current += 1;
+    clearLoadedMemory();
+    const operation = ++snapshotCaptureSequence.current;
+    snapshotHistorySequence.current += 1;
+    snapshotComparisonSequence.current += 1;
+    setSnapshotComparing(false);
+    setSnapshotHistoryLoading(false);
+    const previousTargetId = targetCaptureId;
+    setSnapshotCapturing(true);
+    setSnapshotHistoryError(null);
+    setSnapshotHistoryFeedback(null);
+    setSnapshotHistoryWarning(null);
+    try {
+      if (tauri) {
+        const result = await captureContextSnapshot();
+        if (operation !== snapshotCaptureSequence.current) return;
+        resetRuntimeForWorkspace(result.liveSnapshot.workspacePath);
+        setSnapshot(result.liveSnapshot);
+        setSelectedArtifactId(null);
+        setMapFilter({});
+        applySnapshotHistory(
+          result.history,
+          result.captured?.captureId,
+          previousTargetId,
+        );
+        await performRuntimeScan(result.liveSnapshot.workspacePath);
+        if (operation !== snapshotCaptureSequence.current) return;
+        if (!result.captured) {
+          setSnapshotHistoryError(
+            result.persistenceError ?? copy.compare.error,
+          );
+          return;
+        }
+        const storageWarnings = [
+          result.storageStatus.cleanupPending ? copy.compare.cleanupPending : null,
+          result.storageStatus.durabilityWarning ? copy.compare.durabilityWarning : null,
+        ].filter((message): message is string => Boolean(message));
+        setSnapshotHistoryWarning(storageWarnings.join(" ") || null);
+      } else {
+        const capturedAt = new Date().toISOString();
+        const liveSnapshot = { ...snapshot, scannedAt: capturedAt };
+        const captureId = `demo-capture-${capturedAt}`;
+        const stored = safeStoredSnapshot(
+          captureId,
+          "demo-snapshot-current",
+          liveSnapshot,
+          capturedAt,
+        );
+        if (operation !== snapshotCaptureSequence.current) return;
+        syntheticSnapshots.current = [stored, ...syntheticSnapshots.current];
+        setSnapshot(liveSnapshot);
+        applySnapshotHistory(
+          syntheticSnapshots.current.map((item) => item.summary),
+          captureId,
+          previousTargetId,
+        );
+      }
+      setSnapshotHistoryFeedback("captured");
+    } catch (captureError) {
+      if (operation !== snapshotCaptureSequence.current) return;
+      if (
+        suspendedRuntimeOperation === runtimeScanSequence.current
+        && activeRuntimeWorkspacePath.current === null
+      ) {
+        activeRuntimeWorkspacePath.current = runtimeWorkspacePath;
+        setRuntimeLoading(false);
+      }
+      setSnapshotHistoryError(
+        captureError instanceof Error ? captureError.message : String(captureError),
+      );
+    } finally {
+      if (operation === snapshotCaptureSequence.current) setSnapshotCapturing(false);
+    }
+  }
+
+  async function handleInspectContextSnapshot(captureId: string) {
+    const operation = ++contextSnapshotLoadSequence.current;
+    setContextSnapshotLoading(true);
+    setSnapshotHistoryError(null);
+    try {
+      const result = tauri
+        ? await loadContextSnapshot(captureId)
+        : syntheticSnapshots.current.find(
+            (item) => item.summary.captureId === captureId,
+          ) ?? null;
+      if (operation === contextSnapshotLoadSequence.current) {
+        setInspectedContextSnapshot(result);
+      }
+    } catch (loadError) {
+      if (operation === contextSnapshotLoadSequence.current) {
+        setSnapshotHistoryError(loadError instanceof Error ? loadError.message : String(loadError));
+      }
+    } finally {
+      if (operation === contextSnapshotLoadSequence.current) setContextSnapshotLoading(false);
+    }
+  }
+
+  async function handleCompareContextSnapshots() {
+    if (
+      !baseCaptureId
+      || !targetCaptureId
+      || baseCaptureId === targetCaptureId
+      || snapshotCapturing
+      || snapshotHistoryClearing
+    ) return;
+    const operation = ++snapshotComparisonSequence.current;
+    setSnapshotComparing(true);
+    setSnapshotHistoryError(null);
+    setSnapshotHistoryFeedback(null);
+    try {
+      const result = tauri
+        ? await compareContextSnapshots(baseCaptureId, targetCaptureId)
+        : compareStoredSnapshots(
+            syntheticSnapshots.current.find(
+              (item) => item.summary.captureId === baseCaptureId,
+            )!,
+            syntheticSnapshots.current.find(
+              (item) => item.summary.captureId === targetCaptureId,
+            )!,
+          );
+      if (operation === snapshotComparisonSequence.current) setSnapshotComparison(result);
+    } catch (compareError) {
+      if (operation !== snapshotComparisonSequence.current) return;
+      setSnapshotHistoryError(
+        compareError instanceof Error ? compareError.message : String(compareError),
+      );
+      setSnapshotComparison(null);
+    } finally {
+      if (operation === snapshotComparisonSequence.current) setSnapshotComparing(false);
+    }
+  }
+
+  async function handleClearContextSnapshotHistory() {
+    if (
+      (!snapshotHistory.length && !(tauri && snapshotHistoryError))
+      || snapshotHistoryClearing
+      || snapshotCapturing
+      || snapshotComparing
+    ) return;
+    if (!tauri && !window.confirm(copy.compare.clearConfirm)) return;
+    setSnapshotHistoryClearing(true);
+    snapshotCaptureSequence.current += 1;
+    snapshotComparisonSequence.current += 1;
+    contextSnapshotLoadSequence.current += 1;
+    setSnapshotComparing(false);
+    setContextSnapshotLoading(false);
+    setSnapshotHistoryError(null);
+    setSnapshotHistoryFeedback(null);
+    setSnapshotHistoryWarning(null);
+    try {
+      if (tauri) {
+        const result = await clearContextSnapshotHistory();
+        if (!result.cleared) return;
+      } else {
+        syntheticSnapshots.current = [];
+      }
+      applySnapshotHistory([]);
+      setSnapshotHistoryFeedback("cleared");
+    } catch (clearError) {
+      setSnapshotHistoryError(
+        clearError instanceof Error ? clearError.message : String(clearError),
+      );
+    } finally {
+      setSnapshotHistoryClearing(false);
+    }
+  }
+
+  function handleSelectBaseSnapshot(captureId: string) {
+    snapshotComparisonSequence.current += 1;
+    setSnapshotComparing(false);
+    setBaseCaptureId(captureId);
+    setSnapshotComparison(null);
+  }
+
+  function handleSelectTargetSnapshot(captureId: string) {
+    snapshotComparisonSequence.current += 1;
+    setSnapshotComparing(false);
+    setTargetCaptureId(captureId);
+    setSnapshotComparison(null);
+  }
+
+  function handleSwapSnapshots() {
+    snapshotComparisonSequence.current += 1;
+    setSnapshotComparing(false);
+    setBaseCaptureId(targetCaptureId);
+    setTargetCaptureId(baseCaptureId);
+    setSnapshotComparison(null);
   }
 
   function selectKind(kind: HarnessKind) {
@@ -715,7 +1050,7 @@ export default function App() {
               <button
               className="secondary-button"
               onClick={handleRescan}
-              disabled={scanning || memorySaving}
+              disabled={scanning || memorySaving || snapshotCapturing || snapshotHistoryClearing}
               >
                 <RefreshCw size={15} className={scanning ? "spin" : undefined} />
                 {copy.workspace.rescan}
@@ -724,7 +1059,7 @@ export default function App() {
             <button
               className="secondary-button"
               onClick={() => void handleChooseWorkspace()}
-              disabled={!tauri || scanning || memorySaving}
+              disabled={!tauri || scanning || memorySaving || snapshotCapturing || snapshotHistoryClearing}
             >
               <FolderOpen size={15} /> {copy.workspace.open}
             </button>
@@ -752,7 +1087,32 @@ export default function App() {
               onRefresh={handleRefreshRuntime}
             />
           ) : section === "compare" ? (
-            <FutureSection section={section} language={language} />
+            <SnapshotCompare
+              currentSnapshot={snapshot}
+              history={snapshotHistory}
+              baseCaptureId={baseCaptureId}
+              targetCaptureId={targetCaptureId}
+              comparison={snapshotComparison}
+              inspectedSnapshot={inspectedContextSnapshot}
+              loadingHistory={snapshotHistoryLoading}
+              capturing={snapshotCapturing}
+              captureDisabled={scanning || memorySaving}
+              comparing={snapshotComparing}
+              loadingSnapshot={contextSnapshotLoading}
+              clearing={snapshotHistoryClearing}
+              feedback={snapshotHistoryFeedback}
+              warning={snapshotHistoryWarning}
+              error={snapshotHistoryError}
+              language={language}
+              synthetic={!tauri}
+              onCapture={() => void handleCaptureContextSnapshot()}
+              onSelectBase={handleSelectBaseSnapshot}
+              onSelectTarget={handleSelectTargetSnapshot}
+              onSwap={handleSwapSnapshots}
+              onCompare={() => void handleCompareContextSnapshots()}
+              onInspect={(captureId) => void handleInspectContextSnapshot(captureId)}
+              onClear={() => void handleClearContextSnapshotHistory()}
+            />
           ) : (
             <>
               <section className="stage-strip" aria-label={copy.stages.ariaLabel}>

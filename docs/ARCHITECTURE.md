@@ -8,7 +8,7 @@ Reasons:
 
 - The end state depends on interactive topology, timelines, diffs and shareable reports; the Web UI ecosystem fits those surfaces well.
 - Tauri uses the system WebView and does not bundle Chromium, keeping the desktop app aligned with the lightweight positioning.
-- Rust provides a narrow local boundary for filesystem scanning, SQLite and Codex App Server stdio.
+- Rust provides a narrow local boundary for filesystem scanning, app-managed persistence and Codex App Server stdio.
 - React views and normalized schemas can later be reused for static share reports or another desktop platform.
 - The app remains a normal desktop window; it does not require a local server or cloud account.
 
@@ -31,7 +31,8 @@ React UI
 - redaction, hashing and duplicate detection;
 - experimental Codex App Server transport and run normalization;
 - narrow Tauri command/capability boundary;
-- later: immutable context snapshots, evaluations and share bundles.
+- v0.4: immutable metadata-only context snapshots, bounded local capture history, and Saved-to-Saved differences;
+- later: execution-time run binding, evaluations and share bundles.
 
 ### React frontend
 
@@ -40,7 +41,8 @@ React UI
 - item inspector;
 - aggregate Share snapshot;
 - metadata-only Codex Runs and linear replay;
-- later: Compare and verifier evidence views.
+- v0.4: Saved-to-Saved Harness history and comparison;
+- later: bound-run and verifier evidence views.
 
 ## Runtime integration boundary
 
@@ -49,6 +51,8 @@ The app does not treat Codex's on-disk rollout JSONL as a permanent public contr
 The flight recorder shows a linear sequence of turns and normalized item types. It excludes raw prompts, reasoning, tool arguments and file diffs. A completed turn is runtime activity, not verifier evidence or proof of success.
 
 Historical thread reads do not currently include a trustworthy historical instruction-source snapshot. Therefore the current release does not claim that current skills/hooks are the exact Harness used by an older run. Capturing and binding immutable context snapshots is an M2 requirement.
+
+v0.4 local capture history does not relax that boundary. A saved snapshot and a run may have nearby timestamps without proving that the snapshot was active when the run executed. Runs remain unbound until a provider adapter supplies a trustworthy execution-time capture point; the UI must not offer a “nearest snapshot” association as evidence.
 
 Claude and other runtimes get separate adapters. Shared UI depends only on normalized entities.
 
@@ -69,15 +73,34 @@ Claude and other runtimes get separate adapters. Shared UI depends only on norma
 - Future exports require a separate redaction pass and preview.
 - Unknown runtime trust or precedence is shown as unknown rather than guessed.
 
-## Data evolution
+## v0.4 snapshot persistence
 
-The current release remains in-memory. Local persistence should be added only when immutable snapshots and explicit retention controls arrive. The durable schema should center on:
+The published v0.3 release remains in-memory. In v0.4, choosing a workspace and using Rescan remain transient live-scan operations: they update the current allowlists and UI but do not create history. Persistence is entered only through a separate, explicit Capture command. That backend command performs its own fresh scan and atomically writes the resulting metadata-only capture; it must not accept a frontend-supplied `HarnessSnapshot` as historical evidence. A fresh-scan or write failure creates no partial capture.
 
-- `ContextSnapshot`
-- `HarnessItemRevision`
-- `ItemResolution`
+The v0.4 persistence design adds two separate concepts behind narrow Tauri commands:
+
+- `ContextSnapshot`: an immutable, content-addressed payload derived from a deterministic ordering of normalized Harness item metadata and resolution evidence;
+- `SnapshotCapture`: a workspace-scoped observation that records capture time, Git branch, completeness, schema version, app/scanner compatibility versions, and the referenced snapshot identifier. Runtime adapter compatibility belongs to a later execution-time binding record, not the v0.4 static capture.
+
+Separating payload identity from capture time means two identical explicit captures can reference the same immutable snapshot without manufacturing a configuration change. Each explicit Capture remains a capture record for retention and audit purposes. Compare accepts two saved captures from the same workspace; it never compares an unsaved mutable frontend object with historical evidence.
+
+The persisted projection is deliberately narrower than the live `HarnessSnapshot`. It can contain stable item identifiers, safe names and relative source labels, provider, kind, scope, content hash, size, resolution, and normalized diagnostic relationships. It must exclude:
+
+- Harness file content and redacted previews;
+- raw Memory text;
+- absolute paths;
+- prompts, reasoning, tool arguments, file diffs, and raw runtime responses.
+
+Capture history is isolated by workspace and retains the latest 50 explicit captures for each workspace. Store access is serialized across cooperating application processes with a workspace-scoped advisory file lock, and the workspace store, object, and lock directories are checked without following symbolic links before use. Removing an older capture through retention does not mutate its referenced snapshot payload; unreferenced payload cleanup is retried on later access, and a committed capture remains successful while any pending cleanup or directory-sync warning is surfaced separately. Clearing the selected workspace's history is a destructive local-data action and requires explicit confirmation. Capture writes must be atomic, schema-bounded, and surface fresh-scan, corruption, or pre-commit persistence failures rather than saving stale live state or silently substituting current frontend data.
+
+If either saved capture represents an incomplete scan, comparison can state field changes for items observed on both sides, but absence-based claims must remain qualified as “observed only in” rather than unconditional additions or removals.
+
+## Later durable model
+
+The longer-term durable schema additionally centers on:
+
 - `Run` and `RunStep`
 - `Evidence`
 - `Evaluation`
 
-Each run must reference an immutable context snapshot; otherwise comparisons cannot attribute changes to model, Harness or workflow revisions.
+Each bound run must reference an immutable context snapshot captured through adapter-backed execution-time evidence; otherwise comparisons cannot attribute changes to model, Harness or workflow revisions. v0.4 intentionally creates no run-to-snapshot references.

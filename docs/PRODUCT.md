@@ -39,21 +39,31 @@ Diagnostics are a separate axis. “Same name, different content” means two pr
 7. Replay a selected run as a linear, metadata-only turn/item timeline.
 8. Copy an aggregate-only, redacted snapshot for a discussion or progress update.
 
+## v0.4 candidate journey
+
+1. Choose or rescan a workspace to update the live view without writing history.
+2. Explicitly choose Capture; the backend performs a fresh scan and atomically saves a local capture backed by an immutable, content-addressed, metadata-only snapshot.
+3. Revisit the latest 50 explicit captures retained for that exact workspace after files have changed or the app has restarted.
+4. Choose two saved snapshots from that workspace and inspect observed additions, removals, content-hash changes, resolution changes, and diagnostic changes.
+5. Clear that workspace's local capture history only through an explicit confirmation.
+
+The saved-history model records configuration evidence, not file backups. It excludes Harness content and previews, raw Memory text, absolute paths, and runtime payloads. A historical item cannot be opened or edited as if the current file were the saved revision.
+
 ## Information architecture
 
 - **Overview**: map, counts, conflicts and recently changed items.
 - **Items**: searchable inventory and inspector.
 - **Runs**: experimental metadata-only Codex thread timeline and observed item types.
-- **Compare**: snapshot/run differences and outcome metrics.
+- **Compare**: Saved-to-Saved Harness revision differences in the v0.4 candidate; bound-run and outcome comparisons only after execution-time capture and verifier evidence exist.
 - **Share**: aggregate-only redacted snapshot today; image and static replay bundles later.
 
-The first release implements Overview, Items, the aggregate Share snapshot, and a read-only Codex flight recorder. Compare remains product direction and must wait for immutable snapshots plus verifier evidence.
+The current public v0.3 release implements Overview, Items, the aggregate Share snapshot, and a read-only Codex flight recorder. The local v0.4 candidate activates Compare for two saved Harness snapshots only. Outcome comparison still requires bound runs plus verifier evidence and remains later work.
 
 ## Scope boundaries
 
 ### MVP
 
-- macOS first and local-only; read-only except for explicit edits to eligible existing Memory Markdown files.
+- macOS first and local-only; Harness sources remain read-only except for explicit edits to eligible existing Memory Markdown files. Explicit Capture and confirmed clear-history actions may write or delete metadata-only records in the app-managed data directory.
 - Codex and Claude Harness discovery.
 - Codex precedence backed by published runtime rules.
 - Map/List exploration and content inspection.
@@ -68,13 +78,15 @@ The first release implements Overview, Items, the aggregate Share snapshot, and 
 
 ### Next
 
-- Immutable Harness snapshot capture and binding for newly observed runs.
+- Explicit, fresh-scan metadata-only Harness capture with atomic persistence and a fixed latest-50-capture retention policy per workspace; ordinary live scans remain transient.
+- Saved-to-Saved Harness comparison within one workspace, with incomplete-scan evidence kept explicit.
+- Adapter-backed execution-time snapshot binding for newly observed runs after the v0.4 storage foundation is validated.
 - Defined graph versus actual path, without inferring a graph from a linear trace.
 - Evidence and verifier attachment.
-- Two-run and two-snapshot comparison.
+- Two-run and outcome comparison across execution-time-bound snapshots.
 - Redacted PNG/static HTML run sharing.
 
-The current runtime view is explicitly limited: current runtime declarations cannot be presented as the historical effective Harness for an older thread, and completion status cannot be presented as task success.
+The current runtime view is explicitly limited: current runtime declarations cannot be presented as the historical effective Harness for an older thread, and completion status cannot be presented as task success. v0.4 does not change that boundary and must not associate a run with the nearest capture by timestamp.
 
 ### Explicitly later
 

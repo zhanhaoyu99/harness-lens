@@ -1,6 +1,6 @@
 [package]
 name = "harness-lens"
-version = "0.3.0"
+version = "0.4.0"
 description = "Local-first Agent Harness DevTools"
 authors = ["Zane"]
 edition = "2021"
@@ -24,6 +24,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 dirs = "6"
+fs2 = "0.4"
 hex = "0.4"
 regex = "1"
 rustix = { version = "1", features = ["process"] }
