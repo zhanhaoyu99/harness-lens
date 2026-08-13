@@ -30,7 +30,7 @@ As of **2026-08-13**:
 - v0.3.0 added composable Codex/Claude provider filtering and compact-window usability fixes.
 - v0.4.0 added explicit, immutable, metadata-only Harness captures and Saved-to-Saved comparison.
 - Main CI now covers frontend tests/build, Rust formatting/Clippy/tests, an explicit Rust 1.88 MSRV test, npm audit, and RustSec audit.
-- Five checksummed macOS arm64 releases and a synthetic-only browser demo are public.
+- Checksummed macOS arm64 releases through v0.4.0 and a synthetic-only browser demo are public.
 - Real adoption is still unproven: there are no public external contributors, forks, or documented third-party use cases yet. Stars and downloads must be reported only from current public evidence and with their limitations.
 
 ## Why this project may qualify (form-ready, under 500 characters)
@@ -64,7 +64,7 @@ Submitted text:
 - [x] Public, checksummed macOS arm64 release with signing/notarization limitations disclosed.
 - [x] Security policy, threat model, contribution guide, roadmap, and maintainer runbook.
 - [x] Real public issue-to-fix-to-release loop: [#10](https://github.com/zhanhaoyu99/harness-lens/issues/10) → [#11](https://github.com/zhanhaoyu99/harness-lens/pull/11) → [v0.1.1](https://github.com/zhanhaoyu99/harness-lens/releases/tag/v0.1.1).
-- [x] Public maintenance evidence through reviewed dependency PRs, green workflows, and five tested releases.
+- [x] Public maintenance evidence through maintainer-triaged dependency updates, green workflows, and checksummed releases through v0.4.0.
 - [x] Concise explanation of ecosystem importance without implying adoption; real usage signals remain future evidence.
 - [x] Maintainer reviewed the official terms and supplied all required personal fields through the official form.
 - [x] Official form displayed its submission receipt confirmation on 2026-08-12.

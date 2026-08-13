@@ -70,7 +70,8 @@ Claude and other runtimes get separate adapters. Shared UI depends only on norma
 - Session content and evidence are read only when the user opens a specific run.
 - Runtime normalization keeps allowlisted metadata and excludes raw prompts, reasoning, tool arguments and diffs.
 - The current Share snapshot contains aggregate counts only; it excludes content and absolute paths.
-- Future exports require a separate redaction pass and preview.
+- The headless compatibility report has its own versioned aggregate projection and allowlist. It includes a validated Harness Lens source revision when available, but excludes workspace and artifact names, paths, branches, content, artifact/content hashes, sizes, timestamps, and diagnostic details; tests assert that representative private fixture values cannot cross that serializer.
+- Future non-aggregate exports require a separate redaction pass and preview.
 - Unknown runtime trust or precedence is shown as unknown rather than guessed.
 
 ## v0.4 snapshot persistence

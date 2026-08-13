@@ -19,5 +19,6 @@ Current milestone: M2 continuation - execution-time run context
 - [x] Metadata-only local snapshot history and Saved-to-Saved comparison shipped in v0.4.0
 - [x] Codex for Open Source application submitted and receipt confirmation observed
 - [x] Durable OSS-readiness objective, evidence baseline, and resume protocol recorded
+- [x] Local v0.5.0 OSS-readiness candidate adds a synthetic tour, source-attributed aggregate compatibility-report contract, CodeQL, and future DMG provenance; publication and remote workflow evidence remain pending
 
-Next delivery: improve discoverability and collect genuine usage evidence while designing an adapter-backed execution-time snapshot binding for new runs. Verifier evidence and attributable comparison metrics follow only after that binding exists.
+Next delivery: publish and remotely verify the current OSS-readiness candidate, then collect genuine compatibility evidence and qualitative friction from independent users. Adapter-backed execution-time snapshot binding remains the next product foundation; verifier evidence and attributable comparison metrics follow only after that binding exists.

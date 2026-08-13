@@ -12,6 +12,14 @@ Thank you for helping make agent tooling more observable and trustworthy. Harnes
 
 Please do not submit real secrets, prompts, model output, customer data, private repository paths, or raw Codex thread payloads. Reduce examples to synthetic fixtures first.
 
+For a real workspace, the aggregate report command provides a smaller starting point than a screenshot or raw scanner output:
+
+```bash
+pnpm compatibility-report -- /path/to/workspace
+```
+
+It excludes workspace paths, artifact names and contents, artifact/content hashes, branches, and diagnostic details. It does include the validated Harness Lens source revision when available, and its aggregate counts can still reveal information about a setup. Review the complete output before sharing it. See the [report contract](docs/COMPATIBILITY-REPORT.md).
+
 ## Before opening an issue
 
 1. Search existing issues and the [roadmap](docs/ROADMAP.md).

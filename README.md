@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#install)
 
-**Inspect Codex and Claude Harness context, replay Codex run metadata, and compare configuration snapshots.**
+**See what Codex and Claude context exists for a project, what current adapters can resolve, what changed, and what a run exposed.**
 
 Harness Lens is a local-first Agent Harness inspector, Codex run flight recorder, and configuration snapshot diff for macOS. It makes scattered coding-agent context inspectable without uploading your repository or raw run content to a Harness Lens service.
 
@@ -24,9 +24,13 @@ Typical uses include:
 
 [简体中文](README.zh-CN.md)
 
-**[Download the latest macOS arm64 release](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Open the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Report compatibility](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
+**[Try the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Download the macOS arm64 app](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Share feedback](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
 
 The browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
+
+![31-second synthetic tour showing Harness inventory, Codex run replay, and saved snapshot comparison](docs/assets/harness-lens-tour.gif)
+
+**31-second synthetic tour:** inventory what can affect a workspace → replay the metadata-only path of a Codex run → compare two explicitly saved Harness snapshots. The tour demonstrates product behavior, not task-success evaluation.
 
 ## Why another Agent DevTool?
 
@@ -43,7 +47,7 @@ Harness Lens keeps four different claims separate:
 
 A completed run is **not** proof that the task succeeded. Harness Lens deliberately avoids turning activity into an evaluation claim.
 
-## Preview
+## Detailed previews
 
 All screenshots below use synthetic data. The browser demo cannot read local files.
 
@@ -125,8 +129,11 @@ sh scripts/with-rust.sh cargo clippy --manifest-path src-tauri/Cargo.toml --all-
 pnpm audit --prod
 sh scripts/with-rust.sh cargo audit --file src-tauri/Cargo.lock
 
-# Headless, content-free workspace summary
+# Headless diagnostic summary (contains workspace path and branch; keep it local)
 pnpm scan -- /path/to/workspace
+
+# Reviewable aggregate compatibility report (no workspace paths, names, content, artifact hashes, or branch)
+pnpm compatibility-report -- /path/to/workspace
 
 # Local app and DMG
 pnpm tauri build
@@ -158,7 +165,9 @@ The roadmap prioritizes those evidence boundaries over adding orchestration feat
 
 Issues, reproducible fixtures, provider-compatibility reports, privacy reviews, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). A report that confirms a documented workflow is useful too; it helps separate real support from assumptions without exposing your Harness content.
+If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). In the desktop app, open Share and copy the aggregate-only summary; source builders can use the CLI below. A report that confirms a documented workflow is useful too—it helps separate real support from assumptions without exposing your Harness content.
+
+If you build from source, `pnpm compatibility-report -- /path/to/workspace` creates a versioned aggregate starting point. Review it before sharing: counts can still reveal information about a setup. See the [report contract](docs/COMPATIBILITY-REPORT.md).
 
 ## License
 

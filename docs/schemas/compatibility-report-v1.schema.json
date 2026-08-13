@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/zhanhaoyu99/harness-lens/blob/main/docs/schemas/compatibility-report-v1.schema.json",
+  "title": "Harness Lens aggregate compatibility report v1",
+  "description": "Aggregate scanner compatibility metadata with validated Harness Lens source attribution. This schema intentionally excludes scanned workspace and Harness artifact details.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reportSchemaVersion",
+    "harnessLensVersion",
+    "sourceRevision",
+    "sourceDirty",
+    "operatingSystem",
+    "architecture",
+    "artifactCount",
+    "byProvider",
+    "byKind",
+    "byResolution",
+    "warningCounts",
+    "scanComplete",
+    "privacyNotice"
+  ],
+  "properties": {
+    "reportSchemaVersion": {
+      "const": 1
+    },
+    "harnessLensVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "sourceRevision": {
+      "description": "Validated HEAD revision of the Harness Lens source checkout observed when the report runs, or null when it cannot be established. This is not build provenance.",
+      "type": ["string", "null"],
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "sourceDirty": {
+      "description": "Whether the Harness Lens source checkout had local changes, or null when it cannot be established.",
+      "type": ["boolean", "null"]
+    },
+    "operatingSystem": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "architecture": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "artifactCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "byProvider": {
+      "$ref": "#/$defs/providerCounts"
+    },
+    "byKind": {
+      "$ref": "#/$defs/kindCounts"
+    },
+    "byResolution": {
+      "$ref": "#/$defs/resolutionCounts"
+    },
+    "warningCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["info", "warning", "error"],
+      "properties": {
+        "info": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warning": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "scanComplete": {
+      "type": "boolean"
+    },
+    "privacyNotice": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "$defs": {
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "providerCounts": {
+      "type": "object",
+      "propertyNames": {
+        "enum": ["codex", "claude", "shared", "plugin"]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/count"
+      }
+    },
+    "kindCounts": {
+      "type": "object",
+      "propertyNames": {
+        "enum": ["instructions", "skill", "hook", "agent", "config", "memory", "rule", "workflow", "plugin"]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/count"
+      }
+    },
+    "resolutionCounts": {
+      "type": "object",
+      "propertyNames": {
+        "enum": ["effective", "defined", "shadowed", "duplicate", "installedInactive", "unknown"]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/count"
+      }
+    }
+  }
+}

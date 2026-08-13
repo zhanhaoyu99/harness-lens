@@ -16,51 +16,64 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-draft:
-    name: Build arm64 DMG and create draft
+  build:
+    name: Build macOS arm64 DMG
     runs-on: macos-14
     timeout-minutes: 45
+    outputs:
+      tag_commit: ${{ steps.validate_tag.outputs.tag_commit }}
     permissions:
-      contents: write
+      contents: read
 
     steps:
+      - name: Require workflow dispatch from main
+        env:
+          WORKFLOW_REF: ${{ github.ref }}
+        run: test "$WORKFLOW_REF" = "refs/heads/main"
+
       - name: Check out release tag
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ format('refs/tags/{0}', inputs.tag) }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate version tag
+        id: validate_tag
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]
-          git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}"
+          tag_commit="$(git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}")"
+          test "$(git rev-parse HEAD)" = "$tag_commit"
+          printf 'tag_commit=%s\n' "$tag_commit" >> "$GITHUB_OUTPUT"
+          git rev-parse --verify "refs/remotes/origin/main^{commit}"
+          git merge-base --is-ancestor "$tag_commit" refs/remotes/origin/main
           version="${RELEASE_TAG#v}"
           test "$(node -p 'require("./package.json").version')" = "$version"
           test "$(sed -n 's/^version = "\([^"]*\)"/\1/p' src-tauri/Cargo.toml | head -1)" = "$version"
           test "$(node -p 'require("./src-tauri/tauri.conf.json").version')" = "$version"
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
           version: 11.16.0
 
       - name: Install Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install Rust target
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
         with:
           components: clippy, rustfmt
           targets: aarch64-apple-darwin
 
       - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: src-tauri -> target
 
@@ -84,34 +97,91 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          dmg_path="$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -type f -name '*.dmg' -print -quit)"
-          test -n "$dmg_path"
+          dmg_directory="src-tauri/target/aarch64-apple-darwin/release/bundle/dmg"
+          dmg_list="$(find "$dmg_directory" -type f -name '*.dmg' -print)"
+          test "$(printf '%s\n' "$dmg_list" | sed '/^$/d' | wc -l | tr -d ' ')" -eq 1
+          dmg_path="$dmg_list"
           version="${RELEASE_TAG#v}"
           asset="Harness-Lens_${version}_aarch64.dmg"
-          mkdir -p release
+          test ! -e release
+          mkdir release
           cp "$dmg_path" "release/$asset"
           (cd release && shasum -a 256 "$asset" > "$asset.sha256")
+          printf 'DMG_ASSET=%s\n' "release/$asset" >> "$GITHUB_ENV"
+          printf 'CHECKSUM_ASSET=%s\n' "release/$asset.sha256" >> "$GITHUB_ENV"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: harness-lens-${{ inputs.tag }}-macos-arm64
-          path: release/*
+          path: |
+            ${{ env.DMG_ASSET }}
+            ${{ env.CHECKSUM_ASSET }}
           if-no-files-found: error
 
-      - name: Create draft GitHub release
+  attest-draft:
+    name: Attest DMG and create draft release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      artifact-metadata: write
+      attestations: write
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Download built release assets
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: harness-lens-${{ inputs.tag }}-macos-arm64
+          path: release
+
+      - name: Validate downloaded release assets
         env:
+          EXPECTED_TAG_COMMIT: ${{ needs.build.outputs.tag_commit }}
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          dmg_asset="release/Harness-Lens_${version}_aarch64.dmg"
+          checksum_asset="$dmg_asset.sha256"
+          test "$(find release -type f -print | wc -l | tr -d ' ')" -eq 2
+          test -f "$dmg_asset"
+          test -f "$checksum_asset"
+          current_tag_commit="$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)"
+          test "$current_tag_commit" = "$EXPECTED_TAG_COMMIT"
+          checksum_name="$(basename "$checksum_asset")"
+          (cd release && shasum -a 256 -c "$checksum_name")
+          printf 'DMG_ASSET=%s\n' "$dmg_asset" >> "$GITHUB_ENV"
+          printf 'CHECKSUM_ASSET=%s\n' "$checksum_asset" >> "$GITHUB_ENV"
+
+      - name: Attest DMG build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: ${{ env.DMG_ASSET }}
+
+      - name: Create draft GitHub release
+        env:
+          EXPECTED_TAG_COMMIT: ${{ needs.build.outputs.tag_commit }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          current_tag_commit="$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)"
+          test "$current_tag_commit" = "$EXPECTED_TAG_COMMIT"
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "A GitHub Release already exists for $RELEASE_TAG" >&2
             exit 1
           fi
-          gh release create "$RELEASE_TAG" release/* \
+          gh release create "$RELEASE_TAG" "$DMG_ASSET" "$CHECKSUM_ASSET" \
             --verify-tag \
             --draft \
             --generate-notes \
             --title "Harness Lens $RELEASE_TAG" \
-            --notes "macOS arm64. Ad-hoc signed and not Apple-notarized; verify the SHA-256 asset and review the documented Gatekeeper boundary before publishing."
+            --notes "Built from tag commit $EXPECTED_TAG_COMMIT. macOS arm64. Ad-hoc signed and not Apple-notarized; verify the SHA-256 asset and review the documented Gatekeeper boundary before publishing. GitHub build provenance is attested for the DMG; the attestation proves workflow origin, not Apple trust or notarization."
+          test "$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)" = "$EXPECTED_TAG_COMMIT"

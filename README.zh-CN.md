@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#安装)
 
-**检查 Codex 与 Claude 的 Harness 上下文，回放 Codex 运行元数据，并比较配置快照。**
+**查看项目中有哪些 Codex 与 Claude 上下文、当前适配器能解析哪些内容、发生了什么变化，以及一次运行暴露了什么。**
 
 Harness Lens 是一个面向 macOS 的本地优先 Agent Harness 检查器、Codex 运行记录器和配置快照对比工具。它能把分散的编码 Agent 上下文变成可检查证据，而无需把仓库或原始运行内容上传到 Harness Lens 服务。
 
@@ -24,9 +24,13 @@ Harness Lens 想先回答两个看似简单、实际很难的问题：
 
 [English](README.md)
 
-**[下载最新 macOS arm64 版本](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[打开在线合成数据 Demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[提交兼容性报告](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
+**[体验在线合成数据 Demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[下载 macOS arm64 应用](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[分享使用反馈](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
 
 浏览器版本只使用生成的示例数据，无法扫描本地文件，也无法连接你本机的 Codex Runtime。
+
+![31 秒合成数据演示：Harness 清单、Codex 运行回放与已保存快照对比](docs/assets/harness-lens-tour.gif)
+
+**31 秒合成数据演示：**盘点会影响工作区的 Harness 内容 → 仅以元数据回放一次 Codex 运行路径 → 对比两份显式保存的 Harness 快照。该演示只展示产品行为，不代表任务结果评估。
 
 ## 为什么需要新的 Agent DevTools？
 
@@ -43,7 +47,7 @@ Harness Lens 会严格区分四类结论：
 
 一次 Run 显示「完成」，并不等于任务结果正确。Harness Lens 不会把活动记录包装成评估结论。
 
-## 界面预览
+## 详细界面预览
 
 以下截图均使用完全合成的数据，浏览器演示版不能读取本地文件。
 
@@ -125,8 +129,11 @@ sh scripts/with-rust.sh cargo clippy --manifest-path src-tauri/Cargo.toml --all-
 pnpm audit --prod
 sh scripts/with-rust.sh cargo audit --file src-tauri/Cargo.lock
 
-# 不含文件内容的 Headless 工作区摘要
+# Headless 诊断摘要（包含工作区路径和分支，请仅在本地使用）
 pnpm scan -- /path/to/workspace
+
+# 可人工检查的聚合兼容性报告（不含工作区路径、名称、正文、制品哈希或分支）
+pnpm compatibility-report -- /path/to/workspace
 
 # 本地 .app 与 DMG
 pnpm tauri build
@@ -158,7 +165,9 @@ Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详
 
 欢迎提交 Issue、可复现 Fixture、Provider 兼容性反馈、隐私审查和范围明确的 Pull Request。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。参与社区即表示同意遵守 [Code of Conduct](CODE_OF_CONDUCT.md)。
 
-如果你正在使用 Codex 或 Claude Code，当前最有价值的早期贡献之一，是提交一份[经过安全脱敏的兼容性报告](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)。即使结果是“按文档正常工作”也有价值：它能帮助项目把真实支持范围与推测区分开，同时不暴露你的 Harness 正文。
+如果你正在使用 Codex 或 Claude Code，当前最有价值的早期贡献之一，是提交一份[经过安全脱敏的兼容性报告](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)。桌面应用用户可打开 Share 并复制仅含聚合信息的摘要；源码用户可使用下方 CLI。即使结果是“按文档正常工作”也有价值：它能帮助项目把真实支持范围与推测区分开，同时不暴露你的 Harness 正文。
+
+如果你从源码运行，可以先执行 `pnpm compatibility-report -- /path/to/workspace` 生成一份有版本的聚合报告。分享前仍需人工检查，因为计数也可能透露环境信息。字段契约见[兼容性报告说明](docs/COMPATIBILITY-REPORT.md)。
 
 ## License
 

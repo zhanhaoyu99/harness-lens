@@ -1,3 +1,4 @@
+pub mod compatibility_report;
 mod memory_edit;
 pub mod model;
 mod redaction;

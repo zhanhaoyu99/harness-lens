@@ -42,6 +42,8 @@ Therefore:
 
 The Share view is intentionally aggregate-only and excludes file contents and absolute paths. Memory editor content is never copied into the regular snapshot or Share model.
 
+The optional source-build `compatibility-report` command produces a separate aggregate projection for manual sharing. It includes the Harness Lens version, the validated HEAD observed from the Harness Lens source checkout when the report runs, its dirty/unknown state, platform family and executable target architecture, counts by provider/kind/resolution, diagnostic severity counts, and scan completeness. This source attribution is not build provenance. Source detection serializes no Git errors, repository paths, branches, remotes, changed-file names, or diff content. The aggregate projection also excludes scanned workspace and artifact names, paths, branch, content, previews, artifact/content hashes, sizes, timestamps, diagnostic text, and runtime payloads. Aggregate counts and a source revision can still reveal information about a developer setup, so the complete output must be reviewed before publication.
+
 ## Local persistence
 
 Before v0.4, Harness Lens did not maintain its own snapshot-history store. Browser/UI state and normal operating-system caches may still exist locally.
