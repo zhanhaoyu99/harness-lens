@@ -1,6 +1,6 @@
 # App progress
 
-Current milestone: M2 - reproducible context snapshots
+Current milestone: M2 continuation - execution-time run context
 
 - [x] Product boundary and four-stage model defined
 - [x] Tauri 2 desktop technical direction recorded
@@ -14,5 +14,10 @@ Current milestone: M2 - reproducible context snapshots
 - [x] Public MIT repository, green CI, and synthetic Pages demo launched
 - [x] Checksummed macOS arm64 v0.1.1 release published
 - [x] First public issue-to-PR-to-release maintenance loop completed
+- [x] Memory viewing/editing and project/nested-project scope support shipped in v0.2.0
+- [x] Provider filtering and compact-window scrolling fixes shipped in v0.3.0
+- [x] Metadata-only local snapshot history and Saved-to-Saved comparison shipped in v0.4.0
+- [x] Codex for Open Source application submitted and receipt confirmation observed
+- [x] Durable OSS-readiness objective, evidence baseline, and resume protocol recorded
 
-Next delivery: bind new runs to immutable Harness snapshots, then add verifier evidence and attributable comparison metrics.
+Next delivery: improve discoverability and collect genuine usage evidence while designing an adapter-backed execution-time snapshot binding for new runs. Verifier evidence and attributable comparison metrics follow only after that binding exists.

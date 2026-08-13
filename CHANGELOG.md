@@ -4,6 +4,15 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 ## [Unreleased]
 
+### Changed
+
+- Clarify the README around concrete Codex and Claude Harness workflows, add direct download/demo/compatibility-report actions, and preserve an explicit boundary between submitted and post-submission Codex for Open Source evidence.
+- Add search, Open Graph, Twitter Card, and SoftwareApplication metadata to the synthetic demo.
+
+### Added
+
+- Add a privacy-conscious compatibility-report issue form so real provider support can be documented without collecting Harness content.
+
 ## [0.4.0] - 2026-08-13
 
 ### Added

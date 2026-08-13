@@ -2,7 +2,7 @@
   "name": "harness-lens",
   "private": true,
   "version": "0.4.0",
-  "description": "Local-first Agent Harness DevTools for definitions, resolution, Memory, and read-only runtime evidence.",
+  "description": "Local-first Codex and Claude Agent Harness inspector, run flight recorder, and configuration snapshot diff.",
   "license": "MIT",
   "author": "Zane",
   "repository": {

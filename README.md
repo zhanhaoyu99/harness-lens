@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#install)
 
-**A local-first control plane for understanding your AI coding-agent Harness.**
+**Inspect Codex and Claude Harness context, replay Codex run metadata, and compare configuration snapshots.**
+
+Harness Lens is a local-first Agent Harness inspector, Codex run flight recorder, and configuration snapshot diff for macOS. It makes scattered coding-agent context inspectable without uploading your repository or raw run content to a Harness Lens service.
 
 Harness Lens helps answer two deceptively hard questions:
 
@@ -13,9 +15,18 @@ Harness Lens helps answer two deceptively hard questions:
 
 It scans local Codex and Claude Harness sources, explains their origin and resolution, and can connect to the experimental Codex App Server as a metadata-only “flight recorder.” It does not execute agents or upload scanned content to a Harness Lens service. Harness sources remain read-only except for an explicit, confirmed edit of an existing recognized Memory Markdown file.
 
+Typical uses include:
+
+- auditing which `AGENTS.md`, rules, skills, hooks, config, and Memory are defined, which can be resolved by the current adapters, and which remain unknown before asking Codex to work;
+- explaining why Codex and Claude see different project context;
+- replaying the metadata-only path of a persisted Codex thread;
+- capturing two Harness revisions and identifying configuration changes before blaming the model.
+
 [简体中文](README.zh-CN.md)
 
-**[Open the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** — the browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
+**[Download the latest macOS arm64 release](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Open the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Report compatibility](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
+
+The browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
 
 ## Why another Agent DevTool?
 
@@ -146,6 +157,8 @@ The roadmap prioritizes those evidence boundaries over adding orchestration feat
 ## Contributing
 
 Issues, reproducible fixtures, provider-compatibility reports, privacy reviews, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). A report that confirms a documented workflow is useful too; it helps separate real support from assumptions without exposing your Harness content.
 
 ## License
 

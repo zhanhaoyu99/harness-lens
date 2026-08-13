@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#安装)
 
-**一个本地优先的 Agent Harness Control Plane / Agent DevTools。**
+**检查 Codex 与 Claude 的 Harness 上下文，回放 Codex 运行元数据，并比较配置快照。**
+
+Harness Lens 是一个面向 macOS 的本地优先 Agent Harness 检查器、Codex 运行记录器和配置快照对比工具。它能把分散的编码 Agent 上下文变成可检查证据，而无需把仓库或原始运行内容上传到 Harness Lens 服务。
 
 Harness Lens 想先回答两个看似简单、实际很难的问题：
 
@@ -13,9 +15,18 @@ Harness Lens 想先回答两个看似简单、实际很难的问题：
 
 它会扫描本机的 Codex 与 Claude Harness 来源，解释内容的来源和解析状态，并可连接实验性的 Codex App Server，把运行信息呈现成只包含元数据的「飞行记录」。它不会执行 Agent，也不会把扫描内容上传到 Harness Lens 服务。除用户明确确认编辑一个已识别的 Memory Markdown 文件外，Harness 来源保持只读。
 
+典型用途包括：
+
+- 在让 Codex 开始工作前，审计有哪些 `AGENTS.md`、Rules、Skills、Hooks、Config 和 Memory，哪些能被当前适配器解析，以及哪些仍是未知状态；
+- 解释 Codex 与 Claude 为什么会看到不同的项目上下文；
+- 以仅元数据方式回放一个已持久化 Codex 任务的实际路径；
+- 捕获两次 Harness 版本，在把问题归因给模型前先确认配置改了什么。
+
 [English](README.md)
 
-**[打开在线合成数据 Demo](https://zhanhaoyu99.github.io/harness-lens/)** ——浏览器版本只使用生成的示例数据，无法扫描本地文件，也无法连接你本机的 Codex Runtime。
+**[下载最新 macOS arm64 版本](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[打开在线合成数据 Demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[提交兼容性报告](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
+
+浏览器版本只使用生成的示例数据，无法扫描本地文件，也无法连接你本机的 Codex Runtime。
 
 ## 为什么需要新的 Agent DevTools？
 
@@ -146,6 +157,8 @@ Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详
 ## 参与贡献
 
 欢迎提交 Issue、可复现 Fixture、Provider 兼容性反馈、隐私审查和范围明确的 Pull Request。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。参与社区即表示同意遵守 [Code of Conduct](CODE_OF_CONDUCT.md)。
+
+如果你正在使用 Codex 或 Claude Code，当前最有价值的早期贡献之一，是提交一份[经过安全脱敏的兼容性报告](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)。即使结果是“按文档正常工作”也有价值：它能帮助项目把真实支持范围与推测区分开，同时不暴露你的 Harness 正文。
 
 ## License
 
