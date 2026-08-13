@@ -1,8 +1,8 @@
 {
   "name": "harness-lens",
   "private": true,
-  "version": "0.4.0",
-  "description": "Local-first Agent Harness DevTools for definitions, resolution, Memory, and read-only runtime evidence.",
+  "version": "0.5.0",
+  "description": "Local-first Codex and Claude Agent Harness inspector, run flight recorder, and configuration snapshot diff.",
   "license": "MIT",
   "author": "Zane",
   "repository": {
@@ -32,9 +32,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "pnpm test && pnpm build && pnpm rust:check",
-    "rust:check": "sh scripts/with-rust.sh sh -c 'cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml'",
-    "rust:test": "sh scripts/with-rust.sh cargo test --manifest-path src-tauri/Cargo.toml",
+    "rust:check": "sh scripts/with-rust.sh sh -c 'cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml --all-targets'",
+    "rust:test": "sh scripts/with-rust.sh cargo test --manifest-path src-tauri/Cargo.toml --all-targets",
     "scan": "sh scripts/with-rust.sh cargo run --quiet --manifest-path src-tauri/Cargo.toml --example scan_summary --",
+    "compatibility-report": "sh scripts/with-rust.sh cargo run --quiet --manifest-path src-tauri/Cargo.toml --example compatibility_report --",
     "tauri": "sh scripts/with-rust.sh tauri"
   },
   "dependencies": {

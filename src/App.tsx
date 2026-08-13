@@ -722,6 +722,9 @@ export default function App() {
   }
 
   const groupedArtifacts = selectedArtifact ? [] : filteredArtifacts;
+  const hasUnsavedMemory = Boolean(
+    loadedMemory && loadedMemory.draft !== loadedMemory.document.content,
+  );
   const inventoryFilterActive = Boolean(
     mapFilter.provider || mapFilter.kind || mapFilter.scope || search.trim(),
   );
@@ -977,8 +980,20 @@ export default function App() {
                 className={clsx(section === item.id && "active")}
                 aria-current={section === item.id ? "page" : undefined}
                 onClick={() => {
-                  if (item.id !== section && !confirmUnsavedMemoryLoss()) return;
-                  if (item.id !== "overview" && item.id !== "items") {
+                  const preservesMemoryDraft = item.id === "share" || (
+                    section === "share"
+                    && (item.id === "overview" || item.id === "items")
+                  );
+                  if (
+                    item.id !== section
+                    && !preservesMemoryDraft
+                    && !confirmUnsavedMemoryLoss()
+                  ) return;
+                  if (
+                    !preservesMemoryDraft
+                    && item.id !== "overview"
+                    && item.id !== "items"
+                  ) {
                     memoryMutationSequence.current += 1;
                     clearLoadedMemory();
                   }
@@ -1072,7 +1087,12 @@ export default function App() {
           {!snapshot ? (
             <EmptyWorkspace language={language} onChoose={() => void handleChooseWorkspace()} />
           ) : section === "share" ? (
-            <ShareSnapshot snapshot={snapshot} language={language} />
+            <ShareSnapshot
+              snapshot={snapshot}
+              language={language}
+              synthetic={!tauri}
+              hasUnsavedMemory={hasUnsavedMemory}
+            />
           ) : section === "runs" ? (
             <RuntimeRuns
               snapshot={runtimeSnapshot}

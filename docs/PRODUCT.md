@@ -55,9 +55,9 @@ The saved-history model records configuration evidence, not file backups. It exc
 - **Items**: searchable inventory and inspector.
 - **Runs**: experimental metadata-only Codex thread timeline and observed item types.
 - **Compare**: Saved-to-Saved Harness revision differences in v0.4; bound-run and outcome comparisons only after execution-time capture and verifier evidence exist.
-- **Share**: aggregate-only redacted snapshot today; image and static replay bundles later.
+- **Share**: aggregate-only local preview plus a schema-backed, fresh compatibility report for explicit review and copy in the v0.5 candidate; image and static replay bundles later.
 
-The v0.4 release implements Overview, Items, the aggregate Share snapshot, a read-only Codex flight recorder, and Compare for two saved Harness snapshots. Outcome comparison still requires bound runs plus verifier evidence and remains later work.
+The v0.4 release implements Overview, Items, the aggregate Share snapshot, a read-only Codex flight recorder, and Compare for two saved Harness snapshots. The v0.5 candidate turns Share into a lower-friction, schema-backed compatibility-report path. Outcome comparison still requires bound runs plus verifier evidence and remains later work.
 
 ## Scope boundaries
 

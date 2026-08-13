@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#install)
 
-**A local-first control plane for understanding your AI coding-agent Harness.**
+**See what Codex and Claude context exists for a project, what current adapters can resolve, what changed, and what a run exposed.**
+
+Harness Lens is a local-first Agent Harness inspector, Codex run flight recorder, and configuration snapshot diff for macOS. It makes scattered coding-agent context inspectable without uploading your repository or raw run content to a Harness Lens service.
 
 Harness Lens helps answer two deceptively hard questions:
 
@@ -13,9 +15,22 @@ Harness Lens helps answer two deceptively hard questions:
 
 It scans local Codex and Claude Harness sources, explains their origin and resolution, and can connect to the experimental Codex App Server as a metadata-only “flight recorder.” It does not execute agents or upload scanned content to a Harness Lens service. Harness sources remain read-only except for an explicit, confirmed edit of an existing recognized Memory Markdown file.
 
+Typical uses include:
+
+- auditing which `AGENTS.md`, rules, skills, hooks, config, and Memory are defined, which can be resolved by the current adapters, and which remain unknown before asking Codex to work;
+- explaining why Codex and Claude see different project context;
+- replaying the metadata-only path of a persisted Codex thread;
+- capturing two Harness revisions and identifying configuration changes before blaming the model.
+
 [简体中文](README.zh-CN.md)
 
-**[Open the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** — the browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
+**[Try the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Download the macOS arm64 app](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Share feedback](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
+
+The browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
+
+![31-second synthetic tour showing Harness inventory, Codex run replay, and saved snapshot comparison](docs/assets/harness-lens-tour.gif)
+
+**31-second synthetic tour:** inventory what can affect a workspace → replay the metadata-only path of a Codex run → compare two explicitly saved Harness snapshots. The tour demonstrates product behavior, not task-success evaluation.
 
 ## Why another Agent DevTool?
 
@@ -32,7 +47,7 @@ Harness Lens keeps four different claims separate:
 
 A completed run is **not** proof that the task succeeded. Harness Lens deliberately avoids turning activity into an evaluation claim.
 
-## Preview
+## Detailed previews
 
 All screenshots below use synthetic data. The browser demo cannot read local files.
 
@@ -114,8 +129,11 @@ sh scripts/with-rust.sh cargo clippy --manifest-path src-tauri/Cargo.toml --all-
 pnpm audit --prod
 sh scripts/with-rust.sh cargo audit --file src-tauri/Cargo.lock
 
-# Headless, content-free workspace summary
+# Headless diagnostic summary (contains workspace path and branch; keep it local)
 pnpm scan -- /path/to/workspace
+
+# Reviewable aggregate compatibility report (no workspace paths, names, content, artifact hashes, or branch)
+pnpm compatibility-report -- /path/to/workspace
 
 # Local app and DMG
 pnpm tauri build
@@ -130,7 +148,7 @@ Bundles are written below `src-tauri/target/release/bundle/` (or a target-specif
 - **Opt-in raw Memory:** Memory text is not included in the normal snapshot or Share output. It reaches the editor only after the user asks to view that file and may contain unredacted sensitive text.
 - **Explicit scope:** scanning starts from a workspace chosen by the user plus documented user-level Harness locations.
 - **Best-effort redaction:** common secret patterns are redacted before previews, but no redactor can guarantee that arbitrary sensitive text is removed.
-- **Conservative sharing:** the current Share view contains aggregate counts only.
+- **Conservative sharing:** desktop Share performs a fresh, read-only disk scan and shows the complete schema-v1 aggregate report before the user explicitly copies it. Unsaved Memory drafts stay local to the editor and are not scanned.
 - **Experimental runtime:** Codex App Server compatibility can change. Runtime errors are shown instead of silently fabricating evidence.
 
 Treat all previews and screenshots as potentially sensitive. Review anything before sharing it. See [Privacy](docs/PRIVACY.md), [Threat model](docs/THREAT-MODEL.md), and [Security policy](SECURITY.md).
@@ -146,6 +164,10 @@ The roadmap prioritizes those evidence boundaries over adding orchestration feat
 ## Contributing
 
 Issues, reproducible fixtures, provider-compatibility reports, privacy reviews, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). In the v0.5 desktop candidate, open Share, generate a fresh report, inspect every field, then copy it explicitly; source builders can use the CLI shown above. A report that confirms a documented workflow is useful too—it helps separate real support from assumptions without exposing your Harness content.
+
+If you build from source, `pnpm compatibility-report -- /path/to/workspace` creates a versioned aggregate starting point. Review it before sharing: counts can still reveal information about a setup. See the [report contract](docs/COMPATIBILITY-REPORT.md).
 
 ## License
 

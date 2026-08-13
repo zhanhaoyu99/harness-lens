@@ -1,0 +1,93 @@
+name: Compatibility report
+description: Share a safe, reproducible Codex or Claude Harness compatibility result.
+title: "[Compatibility]: "
+labels: [needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping validate Harness Lens across real coding-agent setups. Report only safely redacted metadata. Do not attach private prompts, Memory text, secrets, customer data, absolute private paths, or raw Codex thread payloads.
+
+        Desktop app: open Share, generate a fresh compatibility report, inspect every field, then copy it explicitly. Source build: run `pnpm compatibility-report -- /path/to/workspace` for a source-attributed aggregate report. Both exclude source contents and absolute paths, but counts and source attribution can still reveal information about your setup, so inspect the complete output before posting it. The browser demo is synthetic and is not compatibility evidence.
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - Codex
+        - Claude Code
+        - Codex and Claude Code
+        - Another Agent Harness
+    validations:
+      required: true
+  - type: input
+    id: harness-lens-version
+    attributes:
+      label: Harness Lens version
+      placeholder: v0.4.0 release, or v0.5.0 source @ commit SHA
+    validations:
+      required: true
+  - type: input
+    id: provider-version
+    attributes:
+      label: Provider version
+      description: Include the Codex CLI, Claude Code, or other runtime version if relevant.
+      placeholder: codex-cli x.y.z, or N/A for the browser demo
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: The macOS version and architecture are enough; do not include device identifiers.
+      placeholder: macOS 26; arm64
+    validations:
+      required: true
+  - type: dropdown
+    id: install-path
+    attributes:
+      label: How did you run Harness Lens?
+      options:
+        - Public DMG release
+        - Built from source
+        - Synthetic browser demo
+    validations:
+      required: true
+  - type: textarea
+    id: aggregate-report
+    attributes:
+      label: Aggregate summary or report (optional)
+      description: Paste the complete reviewed schema-v1 output from desktop Share, or from `pnpm compatibility-report -- /path/to/workspace` when building from source. Do not paste the browser's synthetic example or the local diagnostic `pnpm scan` output because neither is a shareable real-workspace compatibility report.
+      render: text
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Safe reproduction
+      description: Describe the smallest synthetic or safely redacted workspace shape and the action you took.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Observed result
+      description: What was discovered, resolved, or missing? Do not include raw source content.
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Compatibility outcome
+      options:
+        - Works as documented
+        - Works with a documented limitation
+        - Provider schema or behavior is unsupported
+        - Not sure
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Privacy checklist
+      options:
+        - label: I removed private prompts, secrets, Memory text, customer data, and absolute private paths.
+          required: true
+        - label: I understand this public report is compatibility evidence, not proof that an Agent task succeeded.
+          required: true

@@ -26,7 +26,9 @@ The scanner records normalized metadata such as type, provider, scope, path, siz
 
 Harness Lens invokes a locally installed Codex CLI for its experimental App Server API. The Codex CLI remains governed by its own version, configuration, authentication, and privacy terms.
 
-The GitHub Pages demo is a static browser build with synthetic examples. Browsers do not expose the Tauri filesystem or local Codex commands to that build, so it cannot scan the visitor's machine or load local threads.
+The GitHub Pages demo is a static browser build with synthetic examples. Browsers do not expose the Tauri filesystem or local Codex commands to that build, so it cannot scan the visitor's machine, load local threads, or create a real compatibility report.
+
+In the v0.5 desktop candidate, Share can explicitly request a fresh, read-only scan of the currently authorized workspace's saved files. The Rust backend projects the scan result into the versioned aggregate compatibility-report allowlist and returns a complete preview; the user must review it before a separate copy action. The command accepts no frontend path or snapshot, does not persist or upload the report, and does not replace live Inventory or authorization state. Unsaved Memory drafts remain transient editor state and are not included. Aggregate counts and validated Harness Lens source attribution can still reveal information and must be reviewed.
 
 ## Redaction is best-effort
 
@@ -41,6 +43,8 @@ Therefore:
 - use a private Security Advisory for vulnerabilities.
 
 The Share view is intentionally aggregate-only and excludes file contents and absolute paths. Memory editor content is never copied into the regular snapshot or Share model.
+
+The optional source-build `compatibility-report` command produces a separate aggregate projection for manual sharing. It includes the Harness Lens version, the validated HEAD observed from the Harness Lens source checkout when the report runs, its dirty/unknown state, platform family and executable target architecture, counts by provider/kind/resolution, diagnostic severity counts, and scan completeness. This source attribution is not build provenance. Source detection serializes no Git errors, repository paths, branches, remotes, changed-file names, or diff content. The aggregate projection also excludes scanned workspace and artifact names, paths, branch, content, previews, artifact/content hashes, sizes, timestamps, diagnostic text, and runtime payloads. Aggregate counts and a source revision can still reveal information about a developer setup, so the complete output must be reviewed before publication.
 
 ## Local persistence
 

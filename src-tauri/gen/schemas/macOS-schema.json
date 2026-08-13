@@ -369,6 +369,12 @@
           "markdownDescription": "Enables the compare_context_snapshots command without any pre-configured scope."
         },
         {
+          "description": "Enables the generate_compatibility_report command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-generate-compatibility-report",
+          "markdownDescription": "Enables the generate_compatibility_report command without any pre-configured scope."
+        },
+        {
           "description": "Enables the inspect_runtime command without any pre-configured scope.",
           "type": "string",
           "const": "allow-inspect-runtime",
@@ -447,6 +453,12 @@
           "markdownDescription": "Denies the compare_context_snapshots command without any pre-configured scope."
         },
         {
+          "description": "Denies the generate_compatibility_report command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-generate-compatibility-report",
+          "markdownDescription": "Denies the generate_compatibility_report command without any pre-configured scope."
+        },
+        {
           "description": "Denies the inspect_runtime command without any pre-configured scope.",
           "type": "string",
           "const": "deny-inspect-runtime",
@@ -507,10 +519,10 @@
           "markdownDescription": "Allows an explicit, confirmed save to an editable Markdown Memory artifact from the current scan allowlist."
         },
         {
-          "description": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist.",
+          "description": "Allows the main Harness Lens window to scan a selected workspace, generate an aggregate compatibility report, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist.",
           "type": "string",
           "const": "harness-read",
-          "markdownDescription": "Allows the main Harness Lens window to scan a selected workspace, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist."
+          "markdownDescription": "Allows the main Harness Lens window to scan a selected workspace, generate an aggregate compatibility report, inspect read-only Codex runtime metadata, view Memory content on demand, and open sources from the current scan allowlist."
         },
         {
           "description": "Allows an explicit fresh Harness capture to be stored locally and an explicitly confirmed clear of the selected workspace history.",

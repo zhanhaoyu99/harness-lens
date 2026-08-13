@@ -1,6 +1,9 @@
 import { counterpartDifferenceCount, effectiveCount } from "./artifacts";
-import { messages, type Language } from "./i18n";
-import type { HarnessKind, HarnessSnapshot } from "../types";
+import type {
+  AggregateCompatibilityReport,
+  HarnessKind,
+  HarnessSnapshot,
+} from "../types";
 
 export interface ShareStats {
   resolved: number;
@@ -29,29 +32,77 @@ export function shareStats(snapshot: HarnessSnapshot): ShareStats {
   };
 }
 
-export function buildShareSummary(
-  snapshot: HarnessSnapshot,
-  language: Language,
-): string {
-  const copy = messages[language];
-  const share = copy.shareSnapshot;
-  const stats = shareStats(snapshot);
-  const kindLines = stats.byKind
-    .map(({ kind, count }) => `- ${copy.labels.kind[kind]}: ${count}`)
-    .join("\n");
+function countBy<T extends string>(values: T[]): Record<string, number> {
+  return values.reduce<Record<string, number>>((counts, value) => {
+    counts[value] = (counts[value] ?? 0) + 1;
+    return counts;
+  }, {});
+}
 
-  return [
-    `# ${share.title} — ${snapshot.workspaceName}`,
+function appendCounts(
+  lines: string[],
+  heading: string,
+  counts: Record<string, number>,
+): void {
+  lines.push("", `## ${heading}`, "");
+  const entries = Object.entries(counts).sort(([left], [right]) => left.localeCompare(right));
+  if (!entries.length) {
+    lines.push("- None");
+    return;
+  }
+  lines.push(...entries.map(([label, count]) => `- ${label}: ${count}`));
+}
+
+function formatSyntheticReport(report: AggregateCompatibilityReport): string {
+  const lines = [
+    "# Harness Lens compatibility report",
     "",
-    `${share.inventory}: ${snapshot.artifacts.length}`,
-    `${share.resolved}: ${stats.resolved}`,
-    `${share.drift}: ${stats.differenceGroups}`,
-    `${share.duplicates}: ${stats.duplicateGroups}`,
-    `${share.unknown}: ${stats.unknown}`,
+    "> SYNTHETIC DEMO — schema v1 example only. Not compatibility evidence.",
     "",
-    `## ${share.byType}`,
-    kindLines,
+    `- Report schema: ${report.reportSchemaVersion}`,
+    `- Harness Lens: ${report.harnessLensVersion}`,
+    "- Source revision: synthetic",
+    "- Source dirty: unknown",
+    `- Platform: ${report.operatingSystem} / ${report.architecture}`,
+    `- Scan complete: ${report.scanComplete ? "yes" : "no"}`,
+    `- Artifacts discovered: ${report.artifactCount}`,
+    `- Warnings: ${report.warningCounts.info} info / ${report.warningCounts.warning} warning / ${report.warningCounts.error} error`,
+  ];
+  appendCounts(lines, "By provider", report.byProvider);
+  appendCounts(lines, "By kind", report.byKind);
+  appendCounts(lines, "By resolution", report.byResolution);
+  lines.push(
     "",
-    `_${share.privacy}_`,
-  ].join("\n");
+    "## Evidence boundary",
+    "",
+    "This synthetic example demonstrates the report format only. It does not describe a real workspace or provide compatibility evidence.",
+    "",
+    `_${report.privacyNotice}_`,
+  );
+  return lines.join("\n");
+}
+
+export function buildSyntheticCompatibilityExample(snapshot: HarnessSnapshot): string {
+  const warningCounts = {
+    info: snapshot.warnings.filter((warning) => warning.severity === "info").length,
+    warning: snapshot.warnings.filter((warning) => warning.severity === "warning").length,
+    error: snapshot.warnings.filter((warning) => warning.severity === "error").length,
+  };
+  const report: AggregateCompatibilityReport = {
+    reportSchemaVersion: 1,
+    harnessLensVersion: "0.5.0-demo",
+    sourceRevision: null,
+    sourceDirty: null,
+    operatingSystem: "browser-demo",
+    architecture: "synthetic",
+    artifactCount: snapshot.artifacts.length,
+    byProvider: countBy(snapshot.artifacts.map((artifact) => artifact.provider)),
+    byKind: countBy(snapshot.artifacts.map((artifact) => artifact.kind)),
+    byResolution: countBy(snapshot.artifacts.map((artifact) => artifact.resolution)),
+    warningCounts,
+    scanComplete: warningCounts.error === 0
+      && !snapshot.warnings.some((warning) => warning.id === "scan-incomplete"),
+    privacyNotice: "Synthetic aggregate metadata only. Review before sharing.",
+  };
+  return formatSyntheticReport(report);
 }
