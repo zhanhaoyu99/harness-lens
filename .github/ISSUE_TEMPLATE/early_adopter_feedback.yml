@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for testing Harness Lens with a real coding-agent setup. Follow the [10-minute validation workflow](https://github.com/zhanhaoyu99/harness-lens/discussions/21) using a synthetic or non-sensitive repository.
+        Thank you for testing Harness Lens with a real coding-agent setup. After Harness Lens is installed and launched, follow the [10-minute in-app validation workflow](https://github.com/zhanhaoyu99/harness-lens/discussions/21) using a synthetic or non-sensitive repository. Installation and first-launch time are outside the 10-minute measurement.
 
         Do not include prompts, Memory text, file contents, secrets, customer data, absolute private paths, raw Codex thread payloads, or screenshots containing them. Honest negative feedback is useful; this form does not ask for a Star.
   - type: dropdown

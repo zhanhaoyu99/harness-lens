@@ -23,7 +23,7 @@ As verified on **2026-08-13**, OpenAI's [application page](https://openai.com/fo
 - Main CI covers frontend tests/build, Rust format/Clippy/tests, Rust 1.88 MSRV, npm audit, and RustSec audit.
 - Public maintenance loop exists: issue #10 -> PR #11 -> v0.1.1.
 - Current public adoption signals: 0 stars, 0 forks, 0 watchers, 0 external human contributors, 0 external issues, and no completed compatibility reports. Release asset counters and clone traffic are too early and maintainer/automation-influenced to claim adoption.
-- The latest public release remains v0.4.0; PR #20 remains open with five green CI/CodeQL checks but is blocked by the required-review rule. Do not bypass that protected-branch rule without explicit user authorization.
+- The latest public release remains v0.4.0; PR #20 head `11dab69` remains open with five green CI/CodeQL checks but is blocked by the required-review rule. The current single-maintainer CODEOWNERS/collaborator structure cannot satisfy a real independent approval. Do not bypass that protected-branch rule without explicit user authorization, weaken it for convenience, or use another account as a synthetic reviewer.
 - The submitted ChatGPT-account mailbox contains no OpenAI or Codex for Open Source follow-up as of 2026-08-24. The official materials publish no review SLA or application-update flow.
 - Primary risk: project age and lack of independently verifiable users, feedback, issues, or integrations.
 
@@ -40,7 +40,7 @@ As verified on **2026-08-13**, OpenAI's [application page](https://openai.com/fo
 1. Obtain a real approval for PR #20 or explicit authorization for the repository's administrator-bypass path, then publish the v0.5.0 candidate through green `main` CI, release verification, and installation evidence.
 2. Verify the first real CodeQL run and the next release attestation before recording either as public evidence.
 3. Update GitHub repository description and topics without making adoption claims.
-4. Invite a small set of relevant coding-agent maintainers to try the public 10-minute workflow and submit time-to-first-value plus qualitative friction; do not ask only for stars.
+4. Invite relevant coding-agent maintainers only through public, opt-in GitHub/open-source channels to try the post-install 10-minute in-app workflow and submit time-to-first-value plus qualitative friction; do not use workplace/private channels or ask only for stars.
 5. Remove the largest remaining distribution barrier through Developer ID signing/notarization when credentials are available; otherwise prioritize execution-time run/snapshot binding based on real feedback.
 
 ## Current unpublished candidate — 2026-08-24
@@ -53,8 +53,9 @@ As verified on **2026-08-13**, OpenAI's [application page](https://openai.com/fo
 - The `glib 0.18.5` advisory is absent from the shipped `aarch64-apple-darwin` graph but present in the Linux GTK/WebKit graph. Keep the alert visible and block future Linux distribution until upgraded or otherwise remediated.
 - Full local candidate verification: frontend 43 tests and production build passed; Rust format/strict Clippy passed; 68 library tests plus 3 compatibility-report CLI tests passed; workflow/issue YAML, generated Tauri permission schemas, JSON Schema, responsive Share checks, and diff checks passed. A local v0.5.0 arm64 app/DMG was built, its strict ad-hoc signature and bundle metadata were verified, and `hdiutil verify` passed; this is candidate evidence, not a public release.
 - Repository discovery metadata now names both Codex and Claude configuration use cases and includes focused `claude-code`, `agent-harness`, `agent-observability`, `developer-tools`, `rust`, and `macos` topics. This improves discoverability but is not adoption evidence.
-- [Discussion #21](https://github.com/zhanhaoyu99/harness-lens/discussions/21) publishes a privacy-safe 10-minute early-adopter workflow for the current v0.4.0 release. A focused issue form and README CTA are in the candidate branch. The invitation itself is not adoption evidence.
-- External publication remains pending. Do not describe any candidate item above as shipped until its public PR, CI, and release evidence exist.
+- [Discussion #21](https://github.com/zhanhaoyu99/harness-lens/discussions/21) publishes a privacy-safe 10-minute in-app early-adopter workflow for the current v0.4.0 release; installation and first launch are outside the measurement. A focused issue form and README CTA are in the candidate branch. The invitation itself is not adoption evidence.
+- [openai/codex Show and tell #40309](https://github.com/openai/codex/discussions/40309) presents the v0.4.0 visual inventory → Codex runtime metadata → explicit Capture → Saved-to-Saved Compare loop with the same evidence, privacy, distribution, and no-Star boundaries. It is the first public, opt-in community publication for the experiment; publication alone is not adoption evidence.
+- Candidate merge and release publication remain pending. Do not describe any candidate item above as shipped until its public PR, `main` CI, and release evidence exist.
 
 ## Decision log
 
@@ -62,10 +63,11 @@ As verified on **2026-08-13**, OpenAI's [application page](https://openai.com/fo
 - A reviewer may inspect the live repository, but there is no official guarantee that post-submission changes will be considered.
 - Do not claim that release asset downloads represent independent users until external evidence supports that conclusion.
 - Public promotion must be useful, targeted, and non-spammy; show the problem, workflow, and evidence boundary rather than asking only for stars.
+- Do not submit to an ecosystem directory when its hard inclusion rules do not fit, its submission requires a human action the agent cannot truthfully perform, or the directory is inactive enough that a PR would only manufacture activity.
 
 ## Next adoption experiment
 
-From 2026-08-24 through 2026-08-31, run the public [10-minute early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21) with 5–8 developers who already maintain Codex or Claude project context. Collect time-to-first-value, one previously unknown finding (or none), the first blocking step, intent to reuse, and only privacy-safe public details. The public destination now exists; targeted invitations and independent completions remain pending. Success is at least two independent completed workflows or one feedback-driven issue-to-fix-to-release loop—not Stars, clones, or maintainer-generated downloads.
+From 2026-08-24 through 2026-08-31, run the public [10-minute early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21) with developers who already maintain Codex or Claude project context. The clock starts only after Harness Lens is installed and launched. Collect in-app time-to-first-value, one previously unknown finding (or none), the first blocking step, intent to reuse, and only privacy-safe public details. Promotion stays in public, opt-in GitHub/open-source channels; workplace and private-channel outreach are out of scope. The project Discussion and [official Codex community post](https://github.com/openai/codex/discussions/40309) now exist; independent completions remain pending. Success is at least two independent completed workflows or one feedback-driven issue-to-fix-to-release loop—not Stars, clones, or maintainer-generated downloads.
 
 ## Resume protocol
 

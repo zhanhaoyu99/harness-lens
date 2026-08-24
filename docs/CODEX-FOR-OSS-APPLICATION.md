@@ -32,7 +32,8 @@ As of **2026-08-24**:
 - Main CI now covers frontend tests/build, Rust formatting/Clippy/tests, an explicit Rust 1.88 MSRV test, npm audit, and RustSec audit.
 - Checksummed macOS arm64 releases through v0.4.0 and a synthetic-only browser demo are public.
 - PR #20 has green CI and CodeQL checks for a v0.5 candidate, but it is still awaiting the repository's required review; none of its features are described as shipped.
-- A public [10-minute early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21) now invites privacy-safe product feedback for v0.4.0. Publishing an invitation is not adoption evidence.
+- A public [10-minute post-install early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21) now invites privacy-safe in-app product feedback for v0.4.0. Publishing an invitation is not adoption evidence.
+- An evidence-bounded [Show and tell post in the official Codex GitHub community](https://github.com/openai/codex/discussions/40309) presents the released v0.4.0 workflow and asks for falsification and friction rather than Stars. Publishing the post is not adoption evidence; only independent responses or resulting maintenance work can become evidence.
 - Real adoption is still unproven: there are no public external contributors, forks, completed compatibility reports, or documented third-party use cases yet. Stars, clones, and downloads must be reported only from current public evidence and with their limitations.
 - No OpenAI program follow-up has been received. The official materials publish neither a review SLA nor a supported application-update or duplicate-submission flow.
 

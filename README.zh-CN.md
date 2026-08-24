@@ -165,7 +165,7 @@ Roadmap 会优先补齐这些证据边界，而不是先扩展编排能力。详
 
 欢迎提交 Issue、可复现 Fixture、Provider 兼容性反馈、隐私审查和范围明确的 Pull Request。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。参与社区即表示同意遵守 [Code of Conduct](CODE_OF_CONDUCT.md)。
 
-如果你有 10 分钟和一个合成或非敏感的 Codex/Claude 工作区，可以参加 [Early Adopter 验证](https://github.com/zhanhaoyu99/harness-lens/discussions/21)：完成一次 Inspect → Capture → Compare，再填写[简短反馈表](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=early_adopter_feedback.yml)。这项实验衡量的是首次获得价值所需时间与使用阻力，不会要求 Star。
+安装并成功启动 Harness Lens 后，如果你有 10 分钟和一个合成或非敏感的 Codex/Claude 工作区，可以参加 [Early Adopter 验证](https://github.com/zhanhaoyu99/harness-lens/discussions/21)：完成一次 Inspect → Capture → Compare，再填写[简短反馈表](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=early_adopter_feedback.yml)。安装和首次启动不计入 10 分钟；这项实验衡量的是应用内首次获得价值所需时间与使用阻力，不会要求 Star。
 
 如果你正在使用 Codex 或 Claude Code，当前最有价值的早期贡献之一，是提交一份[经过安全脱敏的兼容性报告](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)。在 v0.5 桌面候选版中，打开 Share，生成一份新的报告，逐项检查后再明确复制；源码用户也可使用上方 CLI。即使结果是“按文档正常工作”也有价值：它能帮助项目把真实支持范围与推测区分开，同时不暴露你的 Harness 正文。
 
