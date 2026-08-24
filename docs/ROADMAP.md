@@ -48,14 +48,17 @@ Known evidence gap: current runtime declarations and historical thread activity 
 - [x] Preserve incomplete-scan state in history and qualify absence-based comparison claims when either side is incomplete.
 - [x] Exclude Harness content and previews, raw Memory text, absolute paths, and raw runtime data from persisted snapshot history.
 
+Exit criterion: after a workspace changes, a user can reopen Harness Lens and explain the saved metadata differences between two explicit capture points without relying on mutable current files.
+
 ## v0.5 — Adoption evidence and safe compatibility feedback
 
 - [x] Add one versioned Rust projection for aggregate compatibility reports, with a published JSON Schema and source-attribution boundary.
 - [x] Let the desktop Share flow fresh-scan saved disk state, preview the complete report, and copy only after explicit review without discarding unsaved Memory drafts.
 - [x] Keep the browser demo's report synthetic and clearly outside real compatibility evidence.
-- [ ] Validate the workflow with 5–8 independent Codex or Claude users and turn verified feedback into compatibility issues or an issue-to-fix-to-release loop.
+- [x] Publish a 10-minute, privacy-safe early-adopter workflow and a short feedback form that measures time-to-first-value, unknown configuration discovery, first friction, and intent to reuse.
+- [ ] Invite 5–8 independent Codex or Claude users and turn verified feedback into compatibility issues or an issue-to-fix-to-release loop.
 
-Exit criterion: after a workspace changes, a user can reopen Harness Lens and explain the saved metadata differences between two explicit capture points without relying on mutable current files.
+Exit criterion: 5–8 targeted invitations plus either at least two independently completed workflows with public, privacy-safe feedback, or one external feedback → issue → fix → release loop. Publishing the form or discussion alone is not adoption evidence.
 
 Evidence boundary: v0.4 compares Saved-to-Saved Harness context only. It does not bind a run to either snapshot, compare outcomes, or infer that the nearest capture was active for a run.
 

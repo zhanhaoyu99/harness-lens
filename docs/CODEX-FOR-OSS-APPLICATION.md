@@ -22,16 +22,19 @@ This is a privacy-safe public record of the submitted project narrative plus cle
 
 ## Live evidence added after submission
 
-As of **2026-08-13**, the official form does not provide a published update workflow. The original submitted text below is therefore preserved verbatim; this section records later repository work without implying that OpenAI received an amended application.
+As of **2026-08-24**, the official form does not provide a published update workflow. The original submitted text below is therefore preserved verbatim; this section records later repository work without implying that OpenAI received an amended application.
 
-As of **2026-08-13**:
+As of **2026-08-24**:
 
 - v0.2.0 added explicit Memory viewing/editing and project/nested-project scope evidence.
 - v0.3.0 added composable Codex/Claude provider filtering and compact-window usability fixes.
 - v0.4.0 added explicit, immutable, metadata-only Harness captures and Saved-to-Saved comparison.
 - Main CI now covers frontend tests/build, Rust formatting/Clippy/tests, an explicit Rust 1.88 MSRV test, npm audit, and RustSec audit.
 - Checksummed macOS arm64 releases through v0.4.0 and a synthetic-only browser demo are public.
-- Real adoption is still unproven: there are no public external contributors, forks, or documented third-party use cases yet. Stars and downloads must be reported only from current public evidence and with their limitations.
+- PR #20 has green CI and CodeQL checks for a v0.5 candidate, but it is still awaiting the repository's required review; none of its features are described as shipped.
+- A public [10-minute early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21) now invites privacy-safe product feedback for v0.4.0. Publishing an invitation is not adoption evidence.
+- Real adoption is still unproven: there are no public external contributors, forks, completed compatibility reports, or documented third-party use cases yet. Stars, clones, and downloads must be reported only from current public evidence and with their limitations.
+- No OpenAI program follow-up has been received. The official materials publish neither a review SLA nor a supported application-update or duplicate-submission flow.
 
 ## Why this project may qualify (form-ready, under 500 characters)
 

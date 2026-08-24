@@ -24,7 +24,7 @@ Typical uses include:
 
 [简体中文](README.zh-CN.md)
 
-**[Try the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Download the macOS arm64 app](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Share feedback](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml)**
+**[Try the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Download the macOS arm64 app](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Join the 10-minute validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21)**
 
 The browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
 
@@ -164,6 +164,8 @@ The roadmap prioritizes those evidence boundaries over adding orchestration feat
 ## Contributing
 
 Issues, reproducible fixtures, provider-compatibility reports, privacy reviews, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Have 10 minutes and a synthetic or non-sensitive Codex/Claude workspace? Join the [early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21), run one Inspect → Capture → Compare workflow, then use the [short feedback form](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=early_adopter_feedback.yml). The experiment measures time-to-first-value and friction; it does not ask for a Star.
 
 If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). In the v0.5 desktop candidate, open Share, generate a fresh report, inspect every field, then copy it explicitly; source builders can use the CLI shown above. A report that confirms a documented workflow is useful too—it helps separate real support from assumptions without exposing your Harness content.
 
