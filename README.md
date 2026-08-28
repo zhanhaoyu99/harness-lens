@@ -4,18 +4,34 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#install)
 
-**A local-first control plane for understanding your AI coding-agent Harness.**
+**Inspect Codex and Claude Code configuration locally, with deterministic Agent Harness diagnostics you can trace back to files and provider rules.**
 
-Harness Lens helps answer two deceptively hard questions:
+Harness Lens is a local-first Codex and Claude Code configuration inspector for macOS. Its full desktop experience combines deterministic Agent Harness diagnostics, a Codex run flight recorder, and configuration snapshot diffing without uploading your repository or raw run content to a Harness Lens service.
 
-1. What rules, skills, hooks, agents, config, and memory can affect this workspace?
-2. What path did a real Codex run take?
+Harness Lens helps answer three deceptively hard questions:
+
+1. What rules, skills, hooks, agents, config, and memory can affect this workspace, and what is each item for?
+2. Which deterministic configuration signals deserve review?
+3. What path did a real Codex run take?
 
 It scans local Codex and Claude Harness sources, explains their origin and resolution, and can connect to the experimental Codex App Server as a metadata-only “flight recorder.” It does not execute agents or upload scanned content to a Harness Lens service. Harness sources remain read-only except for an explicit, confirmed edit of an existing recognized Memory Markdown file.
 
+Typical uses include:
+
+- auditing which `AGENTS.md`, rules, skills, hooks, config, and Memory are defined, which can be resolved by the current adapters, and which remain unknown before asking Codex to work;
+- explaining why Codex and Claude see different project context;
+- replaying the metadata-only path of a persisted Codex thread;
+- capturing two Harness revisions and identifying configuration changes before blaming the model.
+
 [简体中文](README.zh-CN.md)
 
-**[Open the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** — the browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
+**[Try the live synthetic demo](https://zhanhaoyu99.github.io/harness-lens/)** · **[Download the macOS arm64 app](https://github.com/zhanhaoyu99/harness-lens/releases/latest)** · **[Join the 10-minute validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21)**
+
+The browser build uses generated examples only. It cannot scan local files or connect to your local Codex runtime.
+
+![31-second synthetic tour showing Harness inventory, Codex run replay, and saved snapshot comparison](docs/assets/harness-lens-tour.gif)
+
+**31-second synthetic tour:** inventory what can affect a workspace → replay the metadata-only path of a Codex run → compare two explicitly saved Harness snapshots. The tour demonstrates product behavior, not task-success evaluation.
 
 ## Why another Agent DevTool?
 
@@ -32,7 +48,7 @@ Harness Lens keeps four different claims separate:
 
 A completed run is **not** proof that the task succeeded. Harness Lens deliberately avoids turning activity into an evaluation claim.
 
-## Preview
+## Detailed previews
 
 All screenshots below use synthetic data. The browser demo cannot read local files.
 
@@ -59,6 +75,28 @@ All screenshots below use synthetic data. The browser demo cannot read local fil
 - Run the filesystem scan headlessly without opening the desktop app.
 
 The run recorder normalizes allowlisted metadata. It does not display raw prompts, tool arguments, model reasoning, or file diffs.
+
+## Unreleased candidate: deterministic configuration diagnostics
+
+The next candidate adds a concise position and purpose for every discovered item, plus explainable checks for `AGENTS.md`, rules, `SKILL.md`, agent definitions, and other scanned artifacts. A declared, redacted description is used when available; otherwise Harness Lens generates a conservative role description from item type, while showing provider and scope separately as position, instead of guessing business intent from arbitrary file content. Candidate checks include missing Skill descriptions, empty non-Memory files, truncated previews, and maintainability or provider-limit warnings. These are deterministic file and resolution diagnostics, not an AI review, health score, success predictor, or proof that a configuration was active in a run.
+
+Search semantics matter to every result:
+
+- For Codex project instructions, Harness Lens follows the repository-root-to-selected-workspace directory chain, prefers a non-empty `AGENTS.override.md` over `AGENTS.md` in the same directory, and reports the selected instruction chain. It does not treat an arbitrary recursive filename match as effective configuration.
+- For skills, Harness Lens inspects supported Codex, Claude Code, and shared skill roots for a skill directory containing `SKILL.md`. Discovery says that a manifest exists at a supported location; it does not prove runtime loading or invocation.
+
+Two size signals have deliberately different authority. The strictly-over-200-line warning is only a Harness Lens project-maintainability heuristic, applied to Instructions, Rules, Skills, and Agents—not Config, Hooks, Workflows, or Memory. It is not a Codex or Claude Code limit. Codex's 32 KiB default cap applies to the combined project-instruction chain and is a provider-documented limit; see [Codex `AGENTS.md` discovery and limits](https://learn.chatgpt.com/docs/agent-configuration/agents-md). The candidate flags an individual Codex repository or nested-project instruction file at or above 32 KiB because that file alone reaches the combined default budget; it does not mislabel 32 KiB as a generic per-file limit. Harness Lens must label heuristic and provider-backed diagnostics separately.
+
+## Full desktop app, lighter next surfaces
+
+The complete desktop product remains in scope: inventory, inspection, snapshots, comparison, sharing, and run forensics belong together when a deeper investigation is needed. Lighter entry points are planned around the same diagnostic core; they complement the desktop app rather than replace it:
+
+- a focused CLI/Doctor for quick preflight checks (the repository already has a source-level headless scan, but no separately distributed Doctor yet);
+- a Codex plugin for in-context configuration inspection;
+- a DeepSeek Harness plugin, subject to compatibility validation because the [official DeepSeek Harness plugin architecture](https://github.com/deepseek-ai/deepseek-harness) is still a developer preview;
+- a macOS menu-bar item or small widget for low-friction status and scan entry.
+
+These plugins and compact surfaces are roadmap candidates, not currently available v0.4 features.
 
 ## v0.4.0 scope
 
@@ -114,8 +152,11 @@ sh scripts/with-rust.sh cargo clippy --manifest-path src-tauri/Cargo.toml --all-
 pnpm audit --prod
 sh scripts/with-rust.sh cargo audit --file src-tauri/Cargo.lock
 
-# Headless, content-free workspace summary
+# Headless diagnostic summary (contains workspace path and branch; keep it local)
 pnpm scan -- /path/to/workspace
+
+# Reviewable aggregate compatibility report (no workspace paths, names, content, artifact hashes, or branch)
+pnpm compatibility-report -- /path/to/workspace
 
 # Local app and DMG
 pnpm tauri build
@@ -130,7 +171,7 @@ Bundles are written below `src-tauri/target/release/bundle/` (or a target-specif
 - **Opt-in raw Memory:** Memory text is not included in the normal snapshot or Share output. It reaches the editor only after the user asks to view that file and may contain unredacted sensitive text.
 - **Explicit scope:** scanning starts from a workspace chosen by the user plus documented user-level Harness locations.
 - **Best-effort redaction:** common secret patterns are redacted before previews, but no redactor can guarantee that arbitrary sensitive text is removed.
-- **Conservative sharing:** the current Share view contains aggregate counts only.
+- **Conservative sharing:** desktop Share performs a fresh, read-only disk scan and shows the complete schema-v1 aggregate report before the user explicitly copies it. Unsaved Memory drafts stay local to the editor and are not scanned.
 - **Experimental runtime:** Codex App Server compatibility can change. Runtime errors are shown instead of silently fabricating evidence.
 
 Treat all previews and screenshots as potentially sensitive. Review anything before sharing it. See [Privacy](docs/PRIVACY.md), [Threat model](docs/THREAT-MODEL.md), and [Security policy](SECURITY.md).
@@ -146,6 +187,12 @@ The roadmap prioritizes those evidence boundaries over adding orchestration feat
 ## Contributing
 
 Issues, reproducible fixtures, provider-compatibility reports, privacy reviews, and focused pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). By participating, you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Once Harness Lens is installed and launched, spend 10 minutes with a synthetic or non-sensitive Codex/Claude workspace: join the [early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21), run one Inspect → Capture → Compare workflow, then use the [short feedback form](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=early_adopter_feedback.yml). Installation and first-launch time are outside the measurement. The experiment measures in-app time-to-first-value and friction; it does not ask for a Star.
+
+If you use Codex or Claude Code, one of the most useful early contributions is a [safely redacted compatibility report](https://github.com/zhanhaoyu99/harness-lens/issues/new?template=compatibility_report.yml). In the v0.5 desktop candidate, open Share, generate a fresh report, inspect every field, then copy it explicitly; source builders can use the CLI shown above. A report that confirms a documented workflow is useful too—it helps separate real support from assumptions without exposing your Harness content.
+
+If you build from source, `pnpm compatibility-report -- /path/to/workspace` creates a versioned aggregate starting point. Review it before sharing: counts can still reveal information about a setup. See the [report contract](docs/COMPATIBILITY-REPORT.md).
 
 ## License
 

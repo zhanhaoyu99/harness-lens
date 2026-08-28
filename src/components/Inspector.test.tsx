@@ -21,6 +21,7 @@ function renderInspector(options: {
     <Inspector
       artifact={memoryArtifact}
       counterpart={null}
+      warnings={sampleSnapshot.warnings}
       language="zh"
       workspacePath={sampleSnapshot.workspacePath}
       groupedArtifacts={[]}
@@ -96,6 +97,7 @@ describe("cross-tool comparison diagnostic", () => {
       <Inspector
         artifact={artifact}
         counterpart={counterpart}
+        warnings={sampleSnapshot.warnings}
         language="zh"
         workspacePath={sampleSnapshot.workspacePath}
         groupedArtifacts={[]}
@@ -115,9 +117,54 @@ describe("cross-tool comparison diagnostic", () => {
       />,
     );
 
-    expect(screen.getByText(/这只是对照信号，不代表配置错误/)).toBeInTheDocument();
+    expect(screen.getByText(/这个对照信号不会改变任一条目的生效状态/)).toBeInTheDocument();
     expect(screen.getByText("Claude · 项目级")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "查看对照条目" }));
     expect(onSelect).toHaveBeenCalledWith(counterpart.id);
+  });
+});
+
+describe("artifact position and deterministic diagnostics", () => {
+  it("shows a generated purpose and qualifies the 200-line rule as a heuristic", () => {
+    const artifact = {
+      ...sampleSnapshot.artifacts.find((item) => item.id === "rule-repo")!,
+      lineCount: 237,
+    };
+
+    render(
+      <Inspector
+        artifact={artifact}
+        counterpart={null}
+        warnings={[{
+          id: "quality:guidance-line-review",
+          severity: "info",
+          title: "Long guidance",
+          detail: "Review it",
+          artifactIds: [artifact.id],
+        }]}
+        language="zh"
+        workspacePath={sampleSnapshot.workspacePath}
+        groupedArtifacts={[]}
+        loadedMemory={null}
+        memoryLoading={false}
+        memorySaving={false}
+        memoryError={null}
+        memoryFeedback={null}
+        canLoadMemory={false}
+        onSelect={vi.fn()}
+        onOpenSource={vi.fn()}
+        onLoadMemory={vi.fn()}
+        onReloadMemory={vi.fn()}
+        onChangeMemoryDraft={vi.fn()}
+        onCancelMemoryChanges={vi.fn()}
+        onSaveMemory={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Codex · 项目级 · 指令")).toBeInTheDocument();
+    expect(screen.getByText("根据条目类型生成；提供方与作用域单独作为定位展示")).toBeInTheDocument();
+    expect(screen.getByText("规范较长 · 237 行")).toBeInTheDocument();
+    expect(screen.getByText(/只是可维护性启发式规则/)).toBeInTheDocument();
+    expect(screen.getByText(/不是 AI 自动评审、质量评分、成功率预测/)).toBeInTheDocument();
   });
 });

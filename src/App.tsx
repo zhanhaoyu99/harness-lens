@@ -343,7 +343,7 @@ export default function App() {
       setSnapshot(result);
       setSelectedArtifactId(null);
       setMapFilter({});
-      await performRuntimeScan(result.workspacePath);
+      void performRuntimeScan(result.workspacePath);
     } catch (scanError) {
       if (operation === scanSequence.current) {
         activeRuntimeWorkspacePath.current = previousWorkspacePath;
@@ -722,6 +722,9 @@ export default function App() {
   }
 
   const groupedArtifacts = selectedArtifact ? [] : filteredArtifacts;
+  const hasUnsavedMemory = Boolean(
+    loadedMemory && loadedMemory.draft !== loadedMemory.document.content,
+  );
   const inventoryFilterActive = Boolean(
     mapFilter.provider || mapFilter.kind || mapFilter.scope || search.trim(),
   );
@@ -780,8 +783,7 @@ export default function App() {
           result.captured?.captureId,
           previousTargetId,
         );
-        await performRuntimeScan(result.liveSnapshot.workspacePath);
-        if (operation !== snapshotCaptureSequence.current) return;
+        void performRuntimeScan(result.liveSnapshot.workspacePath);
         if (!result.captured) {
           setSnapshotHistoryError(
             result.persistenceError ?? copy.compare.error,
@@ -977,8 +979,20 @@ export default function App() {
                 className={clsx(section === item.id && "active")}
                 aria-current={section === item.id ? "page" : undefined}
                 onClick={() => {
-                  if (item.id !== section && !confirmUnsavedMemoryLoss()) return;
-                  if (item.id !== "overview" && item.id !== "items") {
+                  const preservesMemoryDraft = item.id === "share" || (
+                    section === "share"
+                    && (item.id === "overview" || item.id === "items")
+                  );
+                  if (
+                    item.id !== section
+                    && !preservesMemoryDraft
+                    && !confirmUnsavedMemoryLoss()
+                  ) return;
+                  if (
+                    !preservesMemoryDraft
+                    && item.id !== "overview"
+                    && item.id !== "items"
+                  ) {
                     memoryMutationSequence.current += 1;
                     clearLoadedMemory();
                   }
@@ -1072,7 +1086,12 @@ export default function App() {
           {!snapshot ? (
             <EmptyWorkspace language={language} onChoose={() => void handleChooseWorkspace()} />
           ) : section === "share" ? (
-            <ShareSnapshot snapshot={snapshot} language={language} />
+            <ShareSnapshot
+              snapshot={snapshot}
+              language={language}
+              synthetic={!tauri}
+              hasUnsavedMemory={hasUnsavedMemory}
+            />
           ) : section === "runs" ? (
             <RuntimeRuns
               snapshot={runtimeSnapshot}
@@ -1272,6 +1291,7 @@ export default function App() {
                 ) : (
                   <HarnessTable
                     artifacts={filteredArtifacts}
+                    warnings={snapshot.warnings}
                     language={language}
                     workspacePath={snapshot.workspacePath}
                     selectedId={selectedArtifactId}
@@ -1288,6 +1308,7 @@ export default function App() {
         <Inspector
           artifact={selectedArtifact}
           counterpart={counterpartArtifact}
+          warnings={snapshot?.warnings ?? []}
           language={language}
           workspacePath={snapshot?.workspacePath ?? null}
           groupedArtifacts={groupedArtifacts.length === snapshot?.artifacts.length ? [] : groupedArtifacts}

@@ -363,7 +363,7 @@ fn read_bounded_json_lines(
 
         let newline = buffer.iter().position(|byte| *byte == b'\n');
         let consumed = newline.map_or(buffer.len(), |position| position + 1);
-        let payload_bytes = newline.map_or(consumed, |position| position);
+        let payload_bytes = newline.unwrap_or(consumed);
         if frame.len() + payload_bytes > MAX_RPC_FRAME_BYTES {
             let _ = sender.send(Err(format!(
                 "Codex App Server returned a frame larger than {} MiB. The run was not loaded.",

@@ -281,6 +281,15 @@ export function SnapshotCompare({
                   <AlertTriangle size={15} /> {labels.incompleteBoundary}
                 </div>
               ) : null}
+              {comparison.scannerVersionChanged ? (
+                <div className="comparison-boundary warning">
+                  <AlertTriangle size={15} />
+                  {labels.scannerVersionBoundary(
+                    comparison.base.scannerVersion,
+                    comparison.target.scannerVersion,
+                  )}
+                </div>
+              ) : null}
 
               <div className="comparison-summary" aria-label={labels.summary}>
                 <Metric label={labels.totalChanges} value={comparison.changes.length} primary />
@@ -305,7 +314,9 @@ export function SnapshotCompare({
                     ? <AlertTriangle size={13} />
                     : <CheckCircle2 size={13} />}
                   {comparison.diagnosticsChanged
-                    ? labels.diagnosticsChanged
+                    ? comparison.scannerVersionChanged
+                      ? labels.diagnosticsChangedAcrossScannerVersions
+                      : labels.diagnosticsChanged
                     : labels.diagnosticsStable}
                 </span>
               </div>

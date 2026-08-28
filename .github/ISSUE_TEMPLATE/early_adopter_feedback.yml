@@ -1,0 +1,98 @@
+name: Early adopter feedback
+description: Share a privacy-safe result from the 10-minute Inspect, Capture, and Compare workflow.
+title: "[Early adopter]: "
+labels: [needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Harness Lens with a real coding-agent setup. After Harness Lens is installed and launched, follow the [10-minute in-app validation workflow](https://github.com/zhanhaoyu99/harness-lens/discussions/21) using a synthetic or non-sensitive repository. Installation and first-launch time are outside the 10-minute measurement.
+
+        Do not include prompts, Memory text, file contents, secrets, customer data, absolute private paths, raw Codex thread payloads, or screenshots containing them. Honest negative feedback is useful; this form does not ask for a Star.
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - Codex
+        - Claude Code
+        - Codex and Claude Code
+        - Another Agent Harness
+    validations:
+      required: true
+  - type: input
+    id: provider-version
+    attributes:
+      label: Provider version (optional)
+      description: Include the Codex CLI, Claude Code, or another runtime version if it affected the result.
+      placeholder: codex-cli x.y.z
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: The macOS version and executable architecture are enough; do not include device identifiers.
+      placeholder: macOS 26; arm64
+    validations:
+      required: true
+  - type: dropdown
+    id: install-path
+    attributes:
+      label: How did you run Harness Lens?
+      options:
+        - Public v0.4.0 DMG
+        - Built from source
+    validations:
+      required: true
+  - type: dropdown
+    id: time-to-first-value
+    attributes:
+      label: Time to first value
+      description: How long until you could explain what Harness sources were present or which states remained unknown?
+      options:
+        - Under 2 minutes
+        - 2–5 minutes
+        - 5–10 minutes
+        - Not reached within 10 minutes
+    validations:
+      required: true
+  - type: dropdown
+    id: unknown-discovered
+    attributes:
+      label: Did Harness Lens reveal configuration you did not already understand?
+      options:
+        - "Yes"
+        - "No"
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: first-blocker
+    attributes:
+      label: First blocking or confusing step
+      description: Describe the first point of friction without pasting private content or paths. Write "None" if the workflow was clear.
+    validations:
+      required: true
+  - type: dropdown
+    id: reuse
+    attributes:
+      label: Would you use this again for a real Harness change?
+      options:
+        - "Yes"
+        - Maybe
+        - "No"
+    validations:
+      required: true
+  - type: textarea
+    id: safe-detail
+    attributes:
+      label: Optional privacy-safe detail
+      description: A statement such as “one project Rule appeared as Defined rather than Effective” is enough. Do not paste raw evidence.
+  - type: checkboxes
+    id: privacy-checklist
+    attributes:
+      label: Privacy checklist
+      options:
+        - label: I removed prompts, Memory text, file contents, secrets, customer data, absolute private paths, and raw runtime payloads.
+          required: true
+        - label: I understand this feedback describes product usefulness and compatibility, not proof that an Agent task succeeded.
+          required: true

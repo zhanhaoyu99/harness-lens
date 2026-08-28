@@ -18,7 +18,7 @@ use crate::model::{
 };
 
 const SCHEMA_VERSION: u32 = 1;
-const SCANNER_VERSION: &str = "1";
+const SCANNER_VERSION: &str = "2";
 const MAX_CAPTURES_PER_WORKSPACE: usize = 50;
 const MAX_INDEX_BYTES: u64 = 256 * 1024;
 const MAX_OBJECT_BYTES: u64 = 4 * 1024 * 1024;
@@ -127,6 +127,7 @@ pub struct ContextSnapshotComparison {
     pub changes: Vec<SnapshotArtifactChange>,
     pub unchanged_count: usize,
     pub diagnostics_changed: bool,
+    pub scanner_version_changed: bool,
     pub complete: bool,
 }
 
@@ -445,6 +446,7 @@ pub fn compare(
         changes,
         unchanged_count,
         diagnostics_changed: base.diagnostics != target.diagnostics,
+        scanner_version_changed: base.summary.scanner_version != target.summary.scanner_version,
         complete: base.summary.complete && target.summary.complete,
     })
 }
@@ -1319,6 +1321,53 @@ mod tests {
         assert!(comparison.changes[0].resolution_changed);
         assert!(comparison.changes[0].metadata_changed);
         assert!(comparison.diagnostics_changed);
+        assert!(!comparison.scanner_version_changed);
+    }
+
+    #[test]
+    fn comparison_marks_cross_scanner_diagnostics_as_version_sensitive() {
+        let storage = tempfile::tempdir().expect("storage");
+        let workspace = tempfile::tempdir().expect("workspace");
+        let base_snapshot = fixture_snapshot(workspace.path(), "same");
+        let base = capture(storage.path(), workspace.path(), &base_snapshot)
+            .expect("base capture")
+            .captured;
+        let mut target_snapshot = base_snapshot.clone();
+        target_snapshot.warnings.push(HarnessWarning {
+            id: "new-scanner-diagnostic".to_string(),
+            severity: WarningSeverity::Info,
+            title: "not persisted".to_string(),
+            detail: "not persisted".to_string(),
+            artifact_ids: vec![target_snapshot.artifacts[0].id.clone()],
+        });
+        let target = capture(storage.path(), workspace.path(), &target_snapshot)
+            .expect("target capture")
+            .captured;
+
+        let key = workspace_key(workspace.path()).expect("workspace key");
+        let root = workspace_store_root(storage.path(), &key);
+        let mut index = load_index(&root, &key).expect("index");
+        index
+            .captures
+            .iter_mut()
+            .find(|record| record.capture_id == base.capture_id)
+            .expect("base record")
+            .scanner_version = "1".to_string();
+        atomic_write_json(&root.join("index.json"), &index, MAX_INDEX_BYTES)
+            .expect("updated index");
+
+        let comparison = compare(
+            storage.path(),
+            workspace.path(),
+            &base.capture_id,
+            &target.capture_id,
+        )
+        .expect("comparison");
+
+        assert!(comparison.changes.is_empty());
+        assert_eq!(comparison.unchanged_count, base_snapshot.artifacts.len());
+        assert!(comparison.diagnostics_changed);
+        assert!(comparison.scanner_version_changed);
     }
 
     #[test]
@@ -1553,6 +1602,7 @@ mod tests {
                 content_hash: hex::encode(Sha256::digest(content.as_bytes())),
                 modified_at: None,
                 size_bytes: content.len() as u64,
+                line_count: u64::from(!content.is_empty()),
                 resolution: ResolutionState::Effective,
                 resolution_reason: "not persisted".to_string(),
                 duplicate_group_id: None,

@@ -11,12 +11,22 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import {
+  artifactDiagnostics,
+  artifactSummary,
+  artifactSummarySource,
+} from "../lib/artifacts";
+import {
+  localizeArtifactDiagnostic,
   localizeResolutionReason,
   messages,
   type Language,
 } from "../lib/i18n";
 import { formatBytes, shortPath } from "../lib/labels";
-import type { HarnessArtifact, MemoryArtifactDocument } from "../types";
+import type {
+  HarnessArtifact,
+  HarnessWarning,
+  MemoryArtifactDocument,
+} from "../types";
 
 export interface LoadedMemoryState {
   document: MemoryArtifactDocument;
@@ -26,6 +36,7 @@ export interface LoadedMemoryState {
 interface InspectorProps {
   artifact: HarnessArtifact | null;
   counterpart: HarnessArtifact | null;
+  warnings: HarnessWarning[];
   language: Language;
   workspacePath: string | null;
   groupedArtifacts: HarnessArtifact[];
@@ -47,6 +58,7 @@ interface InspectorProps {
 export function Inspector({
   artifact,
   counterpart,
+  warnings,
   language,
   workspacePath,
   groupedArtifacts,
@@ -101,6 +113,13 @@ export function Inspector({
     ? loadedMemory
     : null;
   const memoryDirty = memory ? memory.draft !== memory.document.content : false;
+  const purpose = artifactSummary(artifact, {
+    byKind: copy.artifact.purposeByKind,
+  });
+  const purposeSource = artifactSummarySource(artifact) === "declared"
+    ? copy.artifact.declaredPurpose
+    : copy.artifact.generatedPurpose;
+  const diagnostics = artifactDiagnostics(artifact, warnings);
 
   return (
     <aside className="inspector">
@@ -112,16 +131,6 @@ export function Inspector({
           </span>
         </div>
         <h2>{artifact.name}</h2>
-        {artifact.description ? <p>{artifact.description}</p> : null}
-        {artifact.counterpartId ? (
-          <span
-            className="diagnostic-tag inspector-diagnostic-tag"
-            title={copy.inspector.sameNameDifferenceBody}
-          >
-            <GitCompareArrows size={11} />
-            {copy.inspector.sameNameDifference}
-          </span>
-        ) : null}
       </div>
 
       <dl className="metadata-grid">
@@ -138,32 +147,103 @@ export function Inspector({
           <dd>{formatBytes(artifact.sizeBytes)}</dd>
         </div>
         <div>
+          <dt>{copy.inspector.lines}</dt>
+          <dd>{artifact.lineCount.toLocaleString(language === "zh" ? "zh-CN" : "en-US")}</dd>
+        </div>
+        <div>
           <dt>{copy.inspector.hash}</dt>
           <dd className="mono">{artifact.contentHash.slice(0, 10)}</dd>
         </div>
       </dl>
 
-      {counterpart ? (
-        <section className="inspector-section diagnostic-section">
-          <div className="section-label-row">
-            <span>{copy.inspector.sameNameDifferenceTitle}</span>
-            <GitCompareArrows size={15} />
-          </div>
-          <p>{copy.inspector.sameNameDifferenceBody}</p>
-          <div className="counterpart-card">
+      <section className="inspector-section purpose-section">
+        <div className="section-label-row">
+          <span>{copy.artifact.positionAndPurpose}</span>
+          <FileQuestion size={15} />
+        </div>
+        <div className="position-purpose-card">
+          <strong>
+            {copy.labels.provider[artifact.provider]} · {copy.labels.scope[artifact.scope]} · {copy.labels.kind[artifact.kind]}
+          </strong>
+          <dl>
             <div>
-              <strong>{counterpart.name}</strong>
-              <small>
-                {copy.labels.provider[counterpart.provider]} · {copy.labels.scope[counterpart.scope]}
-              </small>
-              <code>{workspacePath ? shortPath(counterpart.path, workspacePath) : counterpart.path}</code>
+              <dt>{copy.artifact.purpose}</dt>
+              <dd>{purpose}</dd>
             </div>
-            <button className="secondary-button compact-button" onClick={() => onSelect(counterpart.id)}>
-              {copy.inspector.viewCounterpart}
-            </button>
+            <div>
+              <dt>{copy.artifact.summaryBasis}</dt>
+              <dd>{purposeSource}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section className="inspector-section diagnostic-section">
+        <div className="section-label-row">
+          <span>{copy.artifact.diagnostics}</span>
+          <span className="diagnostic-total">
+            {diagnostics.length ? copy.artifact.diagnosticCount(diagnostics.length) : copy.artifact.noDiagnostics}
+          </span>
+        </div>
+        <p className="diagnostic-boundary">{copy.artifact.diagnosticsBoundary}</p>
+        {diagnostics.length ? (
+          <div className="diagnostic-list">
+            {diagnostics.map((diagnostic) => {
+              const localized = localizeArtifactDiagnostic(diagnostic, artifact, language);
+              return (
+                <article
+                  className={`diagnostic-card severity-${diagnostic.warning.severity}`}
+                  key={diagnostic.warning.id}
+                >
+                  <div className="diagnostic-card-heading">
+                    {diagnostic.code === "counterpartDifference"
+                      ? <GitCompareArrows size={15} />
+                      : <AlertCircle size={15} />}
+                    <strong>{localized.title}</strong>
+                  </div>
+                  <p>{localized.detail}</p>
+                  {localized.recommendation ? (
+                    <div className="diagnostic-fact">
+                      <span>{copy.artifact.recommendation}</span>
+                      <p>{localized.recommendation}</p>
+                    </div>
+                  ) : null}
+                  {localized.basis ? (
+                    <div className="diagnostic-fact">
+                      <span>{copy.artifact.evidenceBasis}</span>
+                      <p>{localized.basis}</p>
+                      {localized.sourceUrl ? (
+                        <a href={localized.sourceUrl} target="_blank" rel="noreferrer">
+                          {copy.artifact.documentedSource} <ExternalLink size={11} />
+                        </a>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {diagnostic.code === "counterpartDifference" && counterpart ? (
+                    <div className="counterpart-card">
+                      <div>
+                        <strong>{counterpart.name}</strong>
+                        <small>
+                          {copy.labels.provider[counterpart.provider]} · {copy.labels.scope[counterpart.scope]}
+                        </small>
+                        <code>{workspacePath ? shortPath(counterpart.path, workspacePath) : counterpart.path}</code>
+                      </div>
+                      <button className="secondary-button compact-button" onClick={() => onSelect(counterpart.id)}>
+                        {copy.inspector.viewCounterpart}
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <div className="diagnostic-empty">
+            <CheckCircle2 size={16} />
+            <span>{copy.artifact.noDiagnosticsDetail}</span>
+          </div>
+        )}
+      </section>
 
       <section className="inspector-section">
         <div className="section-label-row">

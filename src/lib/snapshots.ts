@@ -97,6 +97,7 @@ export function compareStoredSnapshots(
     changes,
     unchangedCount,
     diagnosticsChanged: normalizedDiagnostics(base) !== normalizedDiagnostics(target),
+    scannerVersionChanged: base.summary.scannerVersion !== target.summary.scannerVersion,
     complete: base.summary.complete && target.summary.complete,
   };
 }

@@ -33,6 +33,7 @@ export interface HarnessArtifact {
   contentHash: string;
   modifiedAt: string | null;
   sizeBytes: number;
+  lineCount: number;
   resolution: ResolutionState;
   resolutionReason: string;
   duplicateGroupId: string | null;
@@ -81,6 +82,34 @@ export interface HarnessSnapshot {
   scannedAt: string;
   artifacts: HarnessArtifact[];
   warnings: HarnessWarning[];
+}
+
+export interface CompatibilityWarningCounts {
+  info: number;
+  warning: number;
+  error: number;
+}
+
+export interface AggregateCompatibilityReport {
+  reportSchemaVersion: number;
+  harnessLensVersion: string;
+  sourceRevision: string | null;
+  sourceDirty: boolean | null;
+  operatingSystem: string;
+  architecture: string;
+  artifactCount: number;
+  byProvider: Record<string, number>;
+  byKind: Record<string, number>;
+  byResolution: Record<string, number>;
+  warningCounts: CompatibilityWarningCounts;
+  scanComplete: boolean;
+  privacyNotice: string;
+}
+
+export interface CompatibilityReportOutput {
+  report: AggregateCompatibilityReport;
+  markdown: string;
+  scannedAt: string;
 }
 
 export interface ContextSnapshotSummary {
@@ -160,6 +189,7 @@ export interface ContextSnapshotComparison {
   changes: SnapshotArtifactChange[];
   unchangedCount: number;
   diagnosticsChanged: boolean;
+  scannerVersionChanged: boolean;
   complete: boolean;
 }
 

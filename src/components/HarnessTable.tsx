@@ -1,11 +1,20 @@
-import { FileText, GitCompareArrows, ShieldAlert } from "lucide-react";
-import { artifactSummary } from "../lib/artifacts";
-import { messages, type Language } from "../lib/i18n";
+import { CircleCheck, FileText, ShieldAlert } from "lucide-react";
+import {
+  artifactDiagnostics,
+  artifactSummary,
+  artifactSummarySource,
+} from "../lib/artifacts";
+import {
+  localizeArtifactDiagnostic,
+  messages,
+  type Language,
+} from "../lib/i18n";
 import { shortPath } from "../lib/labels";
-import type { HarnessArtifact } from "../types";
+import type { HarnessArtifact, HarnessWarning } from "../types";
 
 interface HarnessTableProps {
   artifacts: HarnessArtifact[];
+  warnings: HarnessWarning[];
   language: Language;
   workspacePath: string;
   selectedId: string | null;
@@ -14,6 +23,7 @@ interface HarnessTableProps {
 
 export function HarnessTable({
   artifacts,
+  warnings,
   language,
   workspacePath,
   selectedId,
@@ -36,15 +46,25 @@ export function HarnessTable({
         <thead>
           <tr>
             <th>{copy.table.name}</th>
-            <th>{copy.table.kind}</th>
-            <th>{copy.table.provider}</th>
-            <th>{copy.table.scope}</th>
+            <th>{copy.table.positionPurpose}</th>
             <th>{copy.table.status}</th>
+            <th>{copy.table.diagnostics}</th>
           </tr>
         </thead>
         <tbody>
-          {artifacts.map((artifact) => (
-            <tr
+          {artifacts.map((artifact) => {
+            const diagnostics = artifactDiagnostics(artifact, warnings);
+            const primaryDiagnostic = diagnostics[0]
+              ? localizeArtifactDiagnostic(diagnostics[0], artifact, language)
+              : null;
+            const purpose = artifactSummary(artifact, {
+              byKind: copy.artifact.purposeByKind,
+            });
+            const purposeSource = artifactSummarySource(artifact) === "declared"
+              ? copy.artifact.declaredPurpose
+              : copy.artifact.generatedPurpose;
+
+            return <tr
               key={artifact.id}
               className={selectedId === artifact.id ? "selected" : undefined}
               tabIndex={0}
@@ -65,32 +85,38 @@ export function HarnessTable({
                   <div>
                     <strong>{artifact.name}</strong>
                     <span>{shortPath(artifact.path, workspacePath)}</span>
-                    <p>{artifactSummary(artifact, {
-                      contentNotLoaded: copy.table.contentNotLoaded,
-                      noReadableSummary: copy.table.noReadableSummary,
-                    })}</p>
                   </div>
                 </div>
               </td>
-              <td>{copy.labels.kind[artifact.kind]}</td>
-              <td>{copy.labels.provider[artifact.provider]}</td>
-              <td>{copy.labels.scope[artifact.scope]}</td>
+              <td>
+                <div className="artifact-purpose-cell">
+                  <span className="artifact-position">
+                    {copy.labels.provider[artifact.provider]} · {copy.labels.scope[artifact.scope]} · {copy.labels.kind[artifact.kind]}
+                  </span>
+                  <p>{purpose}</p>
+                  <small>{purposeSource}</small>
+                </div>
+              </td>
               <td>
                 <span className={`status-pill status-${artifact.resolution}`}>
                   {copy.labels.resolution[artifact.resolution]}
                 </span>
-                {artifact.counterpartId ? (
-                  <span
-                    className="diagnostic-tag"
-                    title={copy.inspector.sameNameDifferenceBody}
-                  >
-                    <GitCompareArrows size={11} />
-                    {copy.inspector.sameNameDifference}
-                  </span>
-                ) : null}
+              </td>
+              <td>
+                {primaryDiagnostic ? (
+                  <div className={`table-diagnostic severity-${diagnostics[0].warning.severity}`}>
+                    <strong>{copy.artifact.diagnosticCount(diagnostics.length)}</strong>
+                    <span>{primaryDiagnostic.title}</span>
+                  </div>
+                ) : (
+                  <div className="table-diagnostic no-findings">
+                    <CircleCheck size={14} />
+                    <span>{copy.artifact.noDiagnostics}</span>
+                  </div>
+                )}
               </td>
             </tr>
-          ))}
+          })}
         </tbody>
       </table>
     </div>

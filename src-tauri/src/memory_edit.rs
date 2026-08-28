@@ -647,7 +647,9 @@ mod tests {
         let directory = tempfile::tempdir().expect("temporary directory");
         let path = directory.path().join("MEMORY.md");
         fs::write(&path, "memory").expect("fixture");
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o4644))
+        // The sticky bit is a special permission bit and remains observable in
+        // restricted macOS test environments that intentionally strip setuid/setgid.
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o1644))
             .expect("special permissions fixture");
         let identity = file_identity(&path, None).expect("fixture identity");
 

@@ -15,3 +15,5 @@ Expansion path:
 5. Only then consider orchestration or team governance
 
 Distribution starts with a Tauri macOS app and redacted share artifacts. No cloud account is required for the first useful version.
+
+Open-source growth strategy: optimize for verifiable usefulness, active maintenance, and independent adoption. Repository stars and release downloads are supporting signals, not product goals by themselves. Promotion must use truthful demos and targeted feedback requests; fabricated or exchanged engagement is prohibited.

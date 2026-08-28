@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  CompatibilityReportOutput,
   CodexRunDetail,
   CodexRuntimeSnapshot,
   ContextSnapshotCaptureResult,
@@ -22,6 +23,10 @@ export async function chooseWorkspace(title: string): Promise<HarnessSnapshot | 
 
 export async function rescanWorkspace(): Promise<HarnessSnapshot> {
   return invoke<HarnessSnapshot>("rescan_workspace");
+}
+
+export async function generateCompatibilityReport(): Promise<CompatibilityReportOutput> {
+  return invoke<CompatibilityReportOutput>("generate_compatibility_report");
 }
 
 export async function loadDefaultWorkspace(): Promise<HarnessSnapshot | null> {
