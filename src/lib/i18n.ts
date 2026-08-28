@@ -1,4 +1,6 @@
-import type { HarnessWarning } from "../types";
+import type { ArtifactDiagnostic } from "./artifacts";
+import { formatBytes } from "./labels";
+import type { HarnessArtifact, HarnessWarning } from "../types";
 
 export type Language = "zh" | "en";
 
@@ -189,7 +191,9 @@ const en = {
     metadataChanged: "Metadata",
     unchanged: "Unchanged",
     diagnosticsChanged: "Diagnostic set changed",
+    diagnosticsChangedAcrossScannerVersions: "Diagnostic sets differ, but the scanner also changed; attribution is unknown.",
     diagnosticsStable: "Diagnostic set unchanged",
+    scannerVersionBoundary: (base: string, target: string) => `Scanner changed from ${base} to ${target}. Diagnostic differences may come from rule changes, and item differences should be reviewed against both scanner versions before treating them as configuration changes.`,
     overlappingCounts: "Content, resolution and metadata signals can overlap on the same item; they are not added to the distinct total.",
     incompleteBoundary: "At least one scan was incomplete. Only-in-baseline and only-in-target entries may reflect unread sources, so absence is not proven.",
     safeBoundary: "Saved snapshots contain normalized metadata and full-file hashes only—no file content or absolute paths.",
@@ -211,6 +215,76 @@ const en = {
     error: "Snapshot history could not be loaded.",
     synthetic: "Synthetic demo",
   },
+  artifact: {
+    purposeByKind: {
+      instructions: "Guides agent behavior at this scope; applicability still follows provider precedence.",
+      skill: "Provides reusable agent instructions or a workflow; runtime use is not inferred.",
+      hook: "Defines lifecycle behavior; execution requires runtime evidence.",
+      agent: "Defines a specialized agent profile; runtime registration is not assumed.",
+      config: "Configures provider behavior; effective values still depend on trust and precedence.",
+      memory: "Stores maintained context; content is loaded only on request.",
+      rule: "Constrains or permits agent behavior; enforcement depends on provider resolution.",
+      workflow: "Describes a reusable multi-step process; executability is not assumed.",
+      plugin: "Contributes packaged Harness capabilities; installation does not prove activation.",
+    },
+    declaredPurpose: "Declared by the source file",
+    generatedPurpose: "Generated from item type; provider and scope are shown as position",
+    positionAndPurpose: "Position & purpose",
+    purpose: "Purpose",
+    summaryBasis: "Summary basis",
+    diagnostics: "Diagnostics",
+    diagnosticCount: (count: number) => `${count} review hint${count === 1 ? "" : "s"}`,
+    noDiagnostics: "No deterministic findings",
+    noDiagnosticsDetail: "Current rules found no review signals. This is not a health guarantee.",
+    diagnosticsBoundary: "Deterministic review hints only—not an AI review, quality score, success-rate prediction, or proof of runtime use.",
+    recommendation: "Suggested review",
+    evidenceBasis: "Basis",
+    documentedSource: "Provider documentation",
+    findings: {
+      guidanceLineReview: {
+        title: (lineCount: number) => `Long guidance · ${lineCount} lines`,
+        detail: (lineCount: number) => `This file has ${lineCount} lines and exceeds Harness Lens's default 200-line review threshold. The threshold is a maintainability heuristic, not evidence that agent quality or success rate will decline.`,
+        recommendation: "Remove stale, repeated or conflicting guidance first. Split it only when scope and loading behavior remain clear.",
+        basis: "Harness Lens heuristic · review threshold: more than 200 physical lines",
+      },
+      skillDescriptionMissing: {
+        title: "Declared purpose is missing",
+        detail: "No non-empty Skill description was found, so the purpose shown here can only describe the item's known Harness role.",
+        recommendation: "Add a concise description to the Skill frontmatter so people and compatible tools can identify its intended use.",
+        basis: "Declared metadata check",
+      },
+      emptyDefinition: {
+        title: "Empty definition",
+        detail: "This discovered file is 0 bytes and cannot currently contribute a definition.",
+        recommendation: "Add the intended definition or remove the empty file after confirming it is not a deliberate placeholder.",
+        basis: "Exact file size",
+      },
+      previewTruncated: {
+        title: "Preview is truncated",
+        detail: "The inspector shows only the bounded redacted preview. Full-file hashing and line counting still cover the complete file.",
+        recommendation: "Open the source file when reviewing content beyond the preview boundary.",
+        basis: "Harness Lens preview limit",
+      },
+      codexProjectInstructionBudget: {
+        title: "Codex project-instruction budget",
+        detail: (size: string) => `This project instruction file alone is ${size}, reaching or exceeding Codex's default 32 KiB combined project-instruction limit. Later project guidance may be omitted unless the configured limit is higher.`,
+        recommendation: "Review the effective instruction chain, remove repetition, or split scoped guidance into nested directories.",
+        basis: "Codex documented default · 32 KiB combined project instructions",
+      },
+      duplicate: {
+        title: "Duplicate Harness content",
+        detail: "Another discovered item has the same full-file content hash.",
+        recommendation: "Confirm whether both definitions are intentional; remove redundant copies only after checking their scopes.",
+        basis: "Full-file content hash",
+      },
+      counterpartDifference: {
+        title: "Same-name content differs",
+        detail: "Another provider defines the same kind and name in this exact layer with different content. This comparison signal does not change effective state.",
+        recommendation: "Compare the two definitions and decide whether the difference is intentional.",
+        basis: "Same layer, kind and name · different full-file hashes",
+      },
+    },
+  },
   table: {
     emptyTitle: "No Harness items match this view",
     emptyBody: "Try clearing the search or category filters.",
@@ -219,9 +293,9 @@ const en = {
     kind: "Kind",
     provider: "Provider",
     scope: "Scope",
+    positionPurpose: "Position & purpose",
+    diagnostics: "Diagnostics",
     status: "Status",
-    contentNotLoaded: "Content is not loaded by default.",
-    noReadableSummary: "No readable summary.",
   },
   inspector: {
     selectedGroup: "Selected group",
@@ -232,6 +306,7 @@ const en = {
     provider: "Provider",
     scope: "Scope",
     size: "Size",
+    lines: "Lines",
     hash: "Hash",
     whyState: "Why this state",
     source: "Source",
@@ -368,6 +443,16 @@ const en = {
     duplicateDetail: "Multiple discovered items have identical content.",
     driftTitle: (name?: string) => name ? `Same-name content differs: ${name}` : "Cross-tool same-name difference",
     driftDetail: "Harness items in the same concrete user or project layer share a kind and name but have different content. This does not change their effective state.",
+    guidanceTitle: "Long guidance needs review",
+    guidanceDetail: "One or more guidance files exceed the Harness Lens 200-line maintainability heuristic. This is not a quality or success-rate prediction.",
+    skillDescriptionTitle: "Skill purpose is not declared",
+    skillDescriptionDetail: "One or more Skills have no non-empty declared description.",
+    emptyDefinitionTitle: "Empty Harness definition",
+    emptyDefinitionDetail: "One or more discovered non-Memory files are empty.",
+    truncatedPreviewTitle: "Harness preview is truncated",
+    truncatedPreviewDetail: "One or more files exceed the bounded content-preview size; full-file hashes and line counts remain complete.",
+    instructionBudgetTitle: "Codex project-instruction budget reached",
+    instructionBudgetDetail: "A project instruction file alone reaches or exceeds Codex's default 32 KiB combined project-instruction limit.",
   },
 };
 
@@ -556,7 +641,9 @@ const zh: Messages = {
     metadataChanged: "元数据",
     unchanged: "未变化",
     diagnosticsChanged: "诊断集合有变化",
+    diagnosticsChangedAcrossScannerVersions: "诊断集合不同，但扫描器版本也发生了变化，当前无法归因于配置修改。",
     diagnosticsStable: "诊断集合无变化",
+    scannerVersionBoundary: (base: string, target: string) => `扫描器已从 ${base} 变为 ${target}。诊断差异可能来自规则升级；条目差异也应结合两版扫描逻辑复核，不能直接视为配置变化。`,
     overlappingCounts: "内容、解析状态和元数据信号可能同时出现在同一条目，不能相加当作变化总数。",
     incompleteBoundary: "至少一份扫描不完整。仅在基线或目标中出现的条目可能来自未读到的数据源，不能据此证明它已不存在。",
     safeBoundary: "已保存快照只包含归一化元数据和完整文件哈希，不包含文件正文或绝对路径。",
@@ -578,6 +665,76 @@ const zh: Messages = {
     error: "无法加载快照历史。",
     synthetic: "合成演示",
   },
+  artifact: {
+    purposeByKind: {
+      instructions: "在当前作用域指导 Agent 行为；最终是否适用仍遵循提供方的优先级规则。",
+      skill: "提供可复用的 Agent 指令或流程；不能仅凭文件存在推断运行时已使用。",
+      hook: "定义生命周期行为；实际执行情况需要运行时证据。",
+      agent: "定义专用 Agent 配置；不会假定它已完成运行时注册。",
+      config: "配置提供方在当前作用域的行为；最终值仍取决于信任与优先级。",
+      memory: "保存当前作用域维护的上下文；正文仅在主动请求后加载。",
+      rule: "约束或允许 Agent 行为；实际执行取决于提供方解析结果。",
+      workflow: "描述可复用的多步骤流程；不会假定它可以直接执行。",
+      plugin: "提供打包的 Harness 能力；安装不代表已经启用。",
+    },
+    declaredPurpose: "来自源文件的声明",
+    generatedPurpose: "根据条目类型生成；提供方与作用域单独作为定位展示",
+    positionAndPurpose: "定位与功能",
+    purpose: "主要功能",
+    summaryBasis: "摘要依据",
+    diagnostics: "诊断",
+    diagnosticCount: (count: number) => `${count} 项复核提示`,
+    noDiagnostics: "当前规则未发现提示",
+    noDiagnosticsDetail: "当前确定性规则没有发现需要复核的信号；这不代表配置一定健康。",
+    diagnosticsBoundary: "这里只提供确定性的人工复核提示，不是 AI 自动评审、质量评分、成功率预测，也不能证明运行时实际使用。",
+    recommendation: "建议检查",
+    evidenceBasis: "判断依据",
+    documentedSource: "提供方文档",
+    findings: {
+      guidanceLineReview: {
+        title: (lineCount: number) => `规范较长 · ${lineCount} 行`,
+        detail: (lineCount: number) => `当前文件共 ${lineCount} 行，超过 Harness Lens 默认的 200 行复核阈值。这个阈值只是可维护性启发式规则，不代表 Agent 质量或任务成功率一定下降。`,
+        recommendation: "优先删除失效、重复或冲突内容；只有在作用域和加载语义仍然清楚时，再拆成更小的规则或 Skill。",
+        basis: "Harness Lens 启发式规则 · 超过 200 个物理行时复核",
+      },
+      skillDescriptionMissing: {
+        title: "缺少声明式功能说明",
+        detail: "没有找到非空的 Skill description，因此这里只能说明它在 Harness 中的已知角色，不能推断具体业务用途。",
+        recommendation: "在 Skill frontmatter 中补充简洁的 description，帮助使用者和兼容工具识别预期用途。",
+        basis: "声明元数据检查",
+      },
+      emptyDefinition: {
+        title: "定义文件为空",
+        detail: "这个已发现文件为 0 字节，目前不能提供实际定义。",
+        recommendation: "补充预期定义；如果不是有意保留的占位文件，确认后再移除。",
+        basis: "精确文件大小",
+      },
+      previewTruncated: {
+        title: "正文预览已截断",
+        detail: "检查器只展示有边界的脱敏预览；完整文件哈希和行数仍覆盖整个文件。",
+        recommendation: "需要检查预览范围之外的内容时，请打开源文件。",
+        basis: "Harness Lens 预览上限",
+      },
+      codexProjectInstructionBudget: {
+        title: "Codex 项目指令容量",
+        detail: (size: string) => `这个项目指令文件单独已有 ${size}，达到或超过 Codex 默认 32 KiB 的项目指令合并上限；除非提高配置上限，否则后续项目指令可能被省略。`,
+        recommendation: "检查实际指令链，删除重复内容，或把有明确作用域的规范拆到更接近目标目录的位置。",
+        basis: "Codex 官方默认值 · 项目指令合计 32 KiB",
+      },
+      duplicate: {
+        title: "Harness 内容重复",
+        detail: "另一个已发现条目具有相同的完整文件内容哈希。",
+        recommendation: "先确认两个作用域是否都需要这份定义；只有确认冗余后再删除副本。",
+        basis: "完整文件内容哈希",
+      },
+      counterpartDifference: {
+        title: "同名内容不同",
+        detail: "另一个提供方在同一个具体层级中定义了同类型、同名但内容不同的条目；这个对照信号不会改变任一条目的生效状态。",
+        recommendation: "对照两份定义，确认差异是否有意保留。",
+        basis: "同层级、同类型、同名称 · 完整文件哈希不同",
+      },
+    },
+  },
   table: {
     emptyTitle: "没有符合当前条件的 Harness 内容",
     emptyBody: "请尝试清除搜索词或分类筛选。",
@@ -586,9 +743,9 @@ const zh: Messages = {
     kind: "类型",
     provider: "提供方",
     scope: "范围",
+    positionPurpose: "定位与功能",
+    diagnostics: "诊断",
     status: "状态",
-    contentNotLoaded: "默认未加载内容。",
-    noReadableSummary: "没有可读摘要。",
   },
   inspector: {
     selectedGroup: "当前分组",
@@ -599,6 +756,7 @@ const zh: Messages = {
     provider: "提供方",
     scope: "范围",
     size: "大小",
+    lines: "行数",
     hash: "哈希",
     whyState: "状态依据",
     source: "来源",
@@ -735,6 +893,16 @@ const zh: Messages = {
     duplicateDetail: "多个已发现条目具有完全相同的内容。",
     driftTitle: (name?: string) => name ? `同名内容不同：${name}` : "跨工具同名差异",
     driftDetail: "不同工具在同一个具体用户层或项目层中存在同类型、同名但内容不同的 Harness 条目；这不会改变条目的生效状态。",
+    guidanceTitle: "较长规范需要复核",
+    guidanceDetail: "一个或多个规范文件超过 Harness Lens 的 200 行可维护性启发式阈值；这不是质量评分或成功率预测。",
+    skillDescriptionTitle: "Skill 未声明功能说明",
+    skillDescriptionDetail: "一个或多个 Skill 没有非空的声明式 description。",
+    emptyDefinitionTitle: "Harness 定义文件为空",
+    emptyDefinitionDetail: "一个或多个已发现的非 Memory 文件为空。",
+    truncatedPreviewTitle: "Harness 正文预览已截断",
+    truncatedPreviewDetail: "一个或多个文件超过正文预览上限；完整文件哈希和行数仍然完整。",
+    instructionBudgetTitle: "Codex 项目指令达到默认容量",
+    instructionBudgetDetail: "某个项目指令文件单独达到或超过 Codex 默认 32 KiB 的项目指令合并上限。",
   },
 };
 
@@ -782,6 +950,21 @@ export function localizeWarning(
   if (warning.id.startsWith("duplicate:")) {
     return { title: copy.duplicateTitle, detail: copy.duplicateDetail };
   }
+  if (warning.id === "quality:guidance-line-review") {
+    return { title: copy.guidanceTitle, detail: copy.guidanceDetail };
+  }
+  if (warning.id === "quality:skill-description-missing") {
+    return { title: copy.skillDescriptionTitle, detail: copy.skillDescriptionDetail };
+  }
+  if (warning.id === "quality:empty-definition") {
+    return { title: copy.emptyDefinitionTitle, detail: copy.emptyDefinitionDetail };
+  }
+  if (warning.id === "quality:preview-truncated") {
+    return { title: copy.truncatedPreviewTitle, detail: copy.truncatedPreviewDetail };
+  }
+  if (warning.id === "quality:codex-project-instruction-budget") {
+    return { title: copy.instructionBudgetTitle, detail: copy.instructionBudgetDetail };
+  }
   if (
     warning.id.startsWith("drift:") ||
     warning.id.startsWith("counterpart-difference:") ||
@@ -796,6 +979,59 @@ export function localizeWarning(
     return { title: copy.driftTitle(name), detail: copy.driftDetail };
   }
   return { title: warning.title, detail: warning.detail };
+}
+
+export interface LocalizedArtifactDiagnostic {
+  title: string;
+  detail: string;
+  recommendation: string | null;
+  basis: string | null;
+  sourceUrl: string | null;
+}
+
+export function localizeArtifactDiagnostic(
+  diagnostic: ArtifactDiagnostic,
+  artifact: HarnessArtifact,
+  language: Language,
+): LocalizedArtifactDiagnostic {
+  const copy = messages[language].artifact.findings;
+  switch (diagnostic.code) {
+    case "guidanceLineReview":
+      return {
+        title: copy.guidanceLineReview.title(artifact.lineCount),
+        detail: copy.guidanceLineReview.detail(artifact.lineCount),
+        recommendation: copy.guidanceLineReview.recommendation,
+        basis: copy.guidanceLineReview.basis,
+        sourceUrl: null,
+      };
+    case "skillDescriptionMissing":
+      return { ...copy.skillDescriptionMissing, sourceUrl: null };
+    case "emptyDefinition":
+      return { ...copy.emptyDefinition, sourceUrl: null };
+    case "previewTruncated":
+      return { ...copy.previewTruncated, sourceUrl: null };
+    case "codexProjectInstructionBudget":
+      return {
+        title: copy.codexProjectInstructionBudget.title,
+        detail: copy.codexProjectInstructionBudget.detail(formatBytes(artifact.sizeBytes)),
+        recommendation: copy.codexProjectInstructionBudget.recommendation,
+        basis: copy.codexProjectInstructionBudget.basis,
+        sourceUrl: "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
+      };
+    case "duplicate":
+      return { ...copy.duplicate, sourceUrl: null };
+    case "counterpartDifference":
+      return { ...copy.counterpartDifference, sourceUrl: null };
+    case "other": {
+      const localized = localizeWarning(diagnostic.warning, language);
+      return {
+        ...localized,
+        recommendation: null,
+        basis: null,
+        sourceUrl: null,
+      };
+    }
+  }
 }
 
 const zhResolutionReasons: Record<string, string> = {

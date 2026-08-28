@@ -487,6 +487,7 @@ mod tests {
                 content_hash: "deadbeef".to_string(),
                 modified_at: Some("1987-06-05T04:03:02Z".to_string()),
                 size_bytes: 831_947,
+                line_count: 20_000,
                 resolution: ResolutionState::Effective,
                 resolution_reason: "private-resolution-rationale".to_string(),
                 duplicate_group_id: Some("private-duplicate-group".to_string()),

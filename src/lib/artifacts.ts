@@ -93,13 +93,21 @@ export function counterpartDifferenceCount(
 }
 
 export interface ArtifactSummaryFallbacks {
-  contentNotLoaded: string;
-  noReadableSummary: string;
+  byKind: Record<HarnessKind, string>;
 }
 
 const defaultSummaryFallbacks: ArtifactSummaryFallbacks = {
-  contentNotLoaded: "Content is not loaded by default.",
-  noReadableSummary: "No readable summary.",
+  byKind: {
+    instructions: "Guides agent behavior at this scope; applicability still follows provider precedence.",
+    skill: "Provides reusable agent instructions or a workflow; runtime use is not inferred.",
+    hook: "Defines lifecycle behavior; execution requires runtime evidence.",
+    agent: "Defines a specialized agent profile; runtime registration is not assumed.",
+    config: "Configures provider behavior; effective values still depend on trust and precedence.",
+    memory: "Stores maintained context; content is loaded only on request.",
+    rule: "Constrains or permits agent behavior; enforcement depends on provider resolution.",
+    workflow: "Describes a reusable multi-step process; executability is not assumed.",
+    plugin: "Contributes packaged Harness capabilities; installation does not prove activation.",
+  },
 };
 
 export function artifactSummary(
@@ -107,13 +115,71 @@ export function artifactSummary(
   fallbacks: ArtifactSummaryFallbacks = defaultSummaryFallbacks,
 ): string {
   if (artifact.description?.trim()) return artifact.description.trim();
-  if (!artifact.content?.trim()) return fallbacks.contentNotLoaded;
+  return fallbacks.byKind[artifact.kind];
+}
 
-  const body = artifact.content.replace(/^---[\s\S]*?---\s*/, "");
-  const firstMeaningfulLine = body
-    .split("\n")
-    .map((line) => line.trim().replace(/^(?:#{1,6}|[-*]>?)\s+/, ""))
-    .find(Boolean);
+export type ArtifactSummarySource = "declared" | "generated";
 
-  return firstMeaningfulLine ?? fallbacks.noReadableSummary;
+export function artifactSummarySource(
+  artifact: HarnessArtifact,
+): ArtifactSummarySource {
+  return artifact.description?.trim() ? "declared" : "generated";
+}
+
+export type ArtifactDiagnosticCode =
+  | "guidanceLineReview"
+  | "skillDescriptionMissing"
+  | "emptyDefinition"
+  | "previewTruncated"
+  | "codexProjectInstructionBudget"
+  | "duplicate"
+  | "counterpartDifference"
+  | "other";
+
+export interface ArtifactDiagnostic {
+  code: ArtifactDiagnosticCode;
+  warning: HarnessWarning;
+}
+
+export function artifactDiagnostics(
+  artifact: HarnessArtifact,
+  warnings: HarnessWarning[],
+): ArtifactDiagnostic[] {
+  const severityOrder: Record<HarnessWarning["severity"], number> = {
+    error: 0,
+    warning: 1,
+    info: 2,
+  };
+
+  return warnings
+    .filter((warning) => warning.artifactIds.includes(artifact.id))
+    .map((warning) => ({
+      warning,
+      code: diagnosticCode(warning),
+    }))
+    .sort((left, right) => {
+      const severityDifference = severityOrder[left.warning.severity]
+        - severityOrder[right.warning.severity];
+      if (severityDifference !== 0) return severityDifference;
+      return left.warning.id.localeCompare(right.warning.id);
+    });
+}
+
+function diagnosticCode(warning: HarnessWarning): ArtifactDiagnosticCode {
+  switch (warning.id) {
+    case "quality:guidance-line-review":
+      return "guidanceLineReview";
+    case "quality:skill-description-missing":
+      return "skillDescriptionMissing";
+    case "quality:empty-definition":
+      return "emptyDefinition";
+    case "quality:preview-truncated":
+      return "previewTruncated";
+    case "quality:codex-project-instruction-budget":
+      return "codexProjectInstructionBudget";
+    default:
+      if (warning.id.startsWith("duplicate:")) return "duplicate";
+      if (isCounterpartDifferenceWarning(warning)) return "counterpartDifference";
+      return "other";
+  }
 }

@@ -4,14 +4,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#install)
 
-**See what Codex and Claude context exists for a project, what current adapters can resolve, what changed, and what a run exposed.**
+**Inspect Codex and Claude Code configuration locally, with deterministic Agent Harness diagnostics you can trace back to files and provider rules.**
 
-Harness Lens is a local-first Agent Harness inspector, Codex run flight recorder, and configuration snapshot diff for macOS. It makes scattered coding-agent context inspectable without uploading your repository or raw run content to a Harness Lens service.
+Harness Lens is a local-first Codex and Claude Code configuration inspector for macOS. Its full desktop experience combines deterministic Agent Harness diagnostics, a Codex run flight recorder, and configuration snapshot diffing without uploading your repository or raw run content to a Harness Lens service.
 
-Harness Lens helps answer two deceptively hard questions:
+Harness Lens helps answer three deceptively hard questions:
 
-1. What rules, skills, hooks, agents, config, and memory can affect this workspace?
-2. What path did a real Codex run take?
+1. What rules, skills, hooks, agents, config, and memory can affect this workspace, and what is each item for?
+2. Which deterministic configuration signals deserve review?
+3. What path did a real Codex run take?
 
 It scans local Codex and Claude Harness sources, explains their origin and resolution, and can connect to the experimental Codex App Server as a metadata-only “flight recorder.” It does not execute agents or upload scanned content to a Harness Lens service. Harness sources remain read-only except for an explicit, confirmed edit of an existing recognized Memory Markdown file.
 
@@ -74,6 +75,28 @@ All screenshots below use synthetic data. The browser demo cannot read local fil
 - Run the filesystem scan headlessly without opening the desktop app.
 
 The run recorder normalizes allowlisted metadata. It does not display raw prompts, tool arguments, model reasoning, or file diffs.
+
+## Unreleased candidate: deterministic configuration diagnostics
+
+The next candidate adds a concise position and purpose for every discovered item, plus explainable checks for `AGENTS.md`, rules, `SKILL.md`, agent definitions, and other scanned artifacts. A declared, redacted description is used when available; otherwise Harness Lens generates a conservative role description from item type, while showing provider and scope separately as position, instead of guessing business intent from arbitrary file content. Candidate checks include missing Skill descriptions, empty non-Memory files, truncated previews, and maintainability or provider-limit warnings. These are deterministic file and resolution diagnostics, not an AI review, health score, success predictor, or proof that a configuration was active in a run.
+
+Search semantics matter to every result:
+
+- For Codex project instructions, Harness Lens follows the repository-root-to-selected-workspace directory chain, prefers a non-empty `AGENTS.override.md` over `AGENTS.md` in the same directory, and reports the selected instruction chain. It does not treat an arbitrary recursive filename match as effective configuration.
+- For skills, Harness Lens inspects supported Codex, Claude Code, and shared skill roots for a skill directory containing `SKILL.md`. Discovery says that a manifest exists at a supported location; it does not prove runtime loading or invocation.
+
+Two size signals have deliberately different authority. The strictly-over-200-line warning is only a Harness Lens project-maintainability heuristic, applied to Instructions, Rules, Skills, and Agents—not Config, Hooks, Workflows, or Memory. It is not a Codex or Claude Code limit. Codex's 32 KiB default cap applies to the combined project-instruction chain and is a provider-documented limit; see [Codex `AGENTS.md` discovery and limits](https://learn.chatgpt.com/docs/agent-configuration/agents-md). The candidate flags an individual Codex repository or nested-project instruction file at or above 32 KiB because that file alone reaches the combined default budget; it does not mislabel 32 KiB as a generic per-file limit. Harness Lens must label heuristic and provider-backed diagnostics separately.
+
+## Full desktop app, lighter next surfaces
+
+The complete desktop product remains in scope: inventory, inspection, snapshots, comparison, sharing, and run forensics belong together when a deeper investigation is needed. Lighter entry points are planned around the same diagnostic core; they complement the desktop app rather than replace it:
+
+- a focused CLI/Doctor for quick preflight checks (the repository already has a source-level headless scan, but no separately distributed Doctor yet);
+- a Codex plugin for in-context configuration inspection;
+- a DeepSeek Harness plugin, subject to compatibility validation because the [official DeepSeek Harness plugin architecture](https://github.com/deepseek-ai/deepseek-harness) is still a developer preview;
+- a macOS menu-bar item or small widget for low-friction status and scan entry.
+
+These plugins and compact surfaces are roadmap candidates, not currently available v0.4 features.
 
 ## v0.4.0 scope
 

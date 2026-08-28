@@ -8,14 +8,24 @@ All notable changes to Harness Lens will be documented in this file. The project
 
 - Clarify the README around concrete Codex and Claude Harness workflows, add direct demo/download/feedback actions, and preserve the Defined/Resolved/Observed/Evaluated evidence boundary.
 - Add search, Open Graph, Twitter Card, and SoftwareApplication metadata to the synthetic demo.
+- Reposition the unreleased candidate as a local-first Codex and Claude Code configuration inspector with deterministic Agent Harness diagnostics while retaining the complete desktop product.
+- Document `AGENTS.md` and `SKILL.md` search semantics; distinguish the Codex-documented 32 KiB default combined project-instruction limit from the Harness Lens strictly-over-200-line heuristic for Instructions, Rules, Skills, and Agents; and state that diagnostics are not AI review, scoring, prediction, or active-use evidence.
 
 ### Added
 
+- Add a local position and conservative purpose summary for every discovered Harness item, plus a dedicated diagnostics column and evidence-bounded Inspector guidance.
+- Add deterministic scanner diagnostics for guidance strictly over 200 lines, missing Skill descriptions, empty non-Memory definitions, truncated previews, and Codex project instruction files that alone reach the documented default 32 KiB combined budget.
+- Add roadmap candidates for CLI/Doctor, Codex plugin, DeepSeek Harness plugin, and macOS menu-bar/widget surfaces built on the same core; none are claimed as shipped, and DeepSeek integration remains gated by its developer-preview compatibility risk.
+- Document candidate deterministic checks for missing Skill descriptions, empty non-Memory files, and truncated previews.
 - Add a privacy-conscious compatibility-report issue form so real provider support can be documented without collecting Harness content.
 - Add a focused 10-minute post-install early-adopter workflow and feedback form for measuring in-app first value and friction without requesting Stars or private Harness evidence.
 - Add a versioned, source-attributed aggregate compatibility-report command that excludes workspace paths, Harness content, names, artifact/content hashes, branches, and diagnostic details.
 - Add a desktop Share flow that performs a fresh read-only disk scan, previews the complete schema-v1 aggregate report, and copies only after explicit review; unsaved Memory drafts and the synthetic browser demo remain outside real compatibility evidence.
 - Add a reproducible 31-second synthetic README tour covering Harness inventory, metadata-only Codex run replay, and Saved-to-Saved snapshot comparison.
+
+### Fixed
+
+- Let static workspace scans and explicit Capture persistence finish without waiting for the independent Codex runtime refresh, while preserving stale-result isolation.
 
 ### Security
 

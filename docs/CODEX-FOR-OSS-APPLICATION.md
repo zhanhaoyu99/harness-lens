@@ -22,9 +22,9 @@ This is a privacy-safe public record of the submitted project narrative plus cle
 
 ## Live evidence added after submission
 
-As of **2026-08-24**, the official form does not provide a published update workflow. The original submitted text below is therefore preserved verbatim; this section records later repository work without implying that OpenAI received an amended application.
+As of **2026-08-28**, the official form does not provide a published update workflow. The original submitted text below is therefore preserved verbatim; this section records later repository work without implying that OpenAI received an amended application.
 
-As of **2026-08-24**:
+As of **2026-08-28**:
 
 - v0.2.0 added explicit Memory viewing/editing and project/nested-project scope evidence.
 - v0.3.0 added composable Codex/Claude provider filtering and compact-window usability fixes.
@@ -32,9 +32,11 @@ As of **2026-08-24**:
 - Main CI now covers frontend tests/build, Rust formatting/Clippy/tests, an explicit Rust 1.88 MSRV test, npm audit, and RustSec audit.
 - Checksummed macOS arm64 releases through v0.4.0 and a synthetic-only browser demo are public.
 - PR #20 has green CI and CodeQL checks for a v0.5 candidate, but it is still awaiting the repository's required review; none of its features are described as shipped.
+- The local v0.5 candidate now adds conservative position and purpose summaries plus deterministic, inspectable configuration diagnostics. It keeps the Harness Lens 200-line maintainability heuristic separate from Codex's documented default 32 KiB combined project-instruction limit and does not claim quality scoring or success prediction.
+- The full desktop product remains in scope. CLI/Doctor, Codex plugin, DeepSeek Harness plugin, and macOS menu-bar/widget entry points are documented only as complementary roadmap candidates, not shipped integrations.
 - A public [10-minute post-install early-adopter validation](https://github.com/zhanhaoyu99/harness-lens/discussions/21) now invites privacy-safe in-app product feedback for v0.4.0. Publishing an invitation is not adoption evidence.
 - An evidence-bounded [Show and tell post in the official Codex GitHub community](https://github.com/openai/codex/discussions/40309) presents the released v0.4.0 workflow and asks for falsification and friction rather than Stars. Publishing the post is not adoption evidence; only independent responses or resulting maintenance work can become evidence.
-- Real adoption is still unproven: there are no public external contributors, forks, completed compatibility reports, or documented third-party use cases yet. Stars, clones, and downloads must be reported only from current public evidence and with their limitations.
+- Real adoption is still unproven: there are no public external contributors, forks, completed compatibility reports, documented third-party use cases, or independent responses to either public Discussion yet. Stars, clones, and downloads must be reported only from current public evidence and with their limitations.
 - No OpenAI program follow-up has been received. The official materials publish neither a review SLA nor a supported application-update or duplicate-submission flow.
 
 ## Why this project may qualify (form-ready, under 500 characters)

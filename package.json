@@ -2,7 +2,7 @@
   "name": "harness-lens",
   "private": true,
   "version": "0.5.0",
-  "description": "Local-first Codex and Claude Agent Harness inspector, run flight recorder, and configuration snapshot diff.",
+  "description": "Local-first Codex and Claude Code configuration inspector with deterministic Agent Harness diagnostics.",
   "license": "MIT",
   "author": "Zane",
   "repository": {
@@ -15,8 +15,16 @@
   },
   "keywords": [
     "agent-harness",
+    "agent-devtools",
+    "coding-agents",
     "codex",
+    "openai-codex",
     "claude-code",
+    "agents-md",
+    "skill-md",
+    "configuration-inspector",
+    "configuration-linter",
+    "diagnostics",
     "developer-tools",
     "observability"
   ],

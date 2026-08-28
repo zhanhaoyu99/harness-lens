@@ -4,14 +4,15 @@
 
 When a developer maintains rules, skills, hooks, agents, memory and reusable loops across global and project scopes, the first problem is not orchestration. It is visibility: **what do I maintain, what is each item, and what is effective for this task?**
 
-Harness Lens turns that personal pain into an Agent DevTools product. It is not another chat window and it does not execute arbitrary workflows in the MVP.
+Harness Lens turns that personal pain into a local-first Codex and Claude Code configuration inspector with deterministic Agent Harness diagnostics. It is not another chat window and it does not execute arbitrary workflows in the MVP.
 
 ## Core questions
 
 1. What exists in my Harness?
-2. What is effective for this workspace, runtime and working directory?
-3. What path did a real task actually take, and where is the evidence?
-4. After changing the Harness, did success rate, cost, duration or failure mode improve?
+2. What is each item for, where does it apply, and which deterministic findings deserve review?
+3. What is effective for this workspace, runtime and working directory?
+4. What path did a real task actually take, and where is the evidence?
+5. After changing the Harness, did success rate, cost, duration or failure mode improve?
 
 ## Product model
 
@@ -28,12 +29,26 @@ The UI must keep these states separate. A file being present is not proof that i
 
 Diagnostics are a separate axis. “Same name, different content” means two providers define the same kind and name in the same concrete user or project layer but their file hashes differ. It is a comparison hint, not a configuration error, historical drift, or resolution state.
 
+Deterministic diagnostics inspect observable configuration facts and documented resolution rules. They are not AI reviews, health scores, task-success predictors, or evidence that a discovered item was active. Provider-backed limits and Harness Lens heuristics must be labeled separately:
+
+- Codex documents a 32 KiB default limit for the combined project-instruction chain. An individual Codex repository or nested-project instruction file at or above 32 KiB is diagnostic because that file alone reaches the combined budget, not because the provider defines a generic per-file limit. The product should link to the [provider documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md) wherever this diagnostic is explained.
+- A warning for files strictly over 200 lines is only a Harness Lens maintainability heuristic for this project. It applies to Instructions, Rules, Skills, and Agents, but not Config, Hooks, Workflows, or Memory. It must never be described as a Codex, Claude Code, or general Agent Harness limit.
+- Missing Skill descriptions, empty non-Memory files, and truncated previews are observable scanner facts. Memory is excluded from the empty-file diagnostic because its product and privacy semantics differ.
+
+## Configuration search semantics
+
+An inventory is only useful when its search scope is explainable:
+
+- Codex `AGENTS.md` discovery follows the repository-root-to-working-directory chain. Within one directory, a non-empty `AGENTS.override.md` takes precedence over `AGENTS.md`. Files found elsewhere by an arbitrary recursive search are not presented as effective project instructions.
+- Skill discovery examines supported Codex, Claude Code, and shared skill roots for skill directories containing `SKILL.md`. Finding a manifest proves definition at a supported location, not runtime loading, invocation, quality, or success.
+- Scanner and adapter versions remain part of the evidence because provider search behavior can change.
+
 ## Current product journey
 
 1. Choose a local workspace.
 2. See a dynamic Harness map and searchable list.
-3. Open any item to read its redacted content, scope, source and resolution reason; load Memory text only on explicit request.
-4. Identify duplicate definitions, ambiguous names and unknown states.
+3. Open any item to see its scope, conservative purpose summary, deterministic diagnostics, source, redacted content and resolution reason; load Memory text only on explicit request.
+4. Identify long guidance, missing declarations, duplicate definitions, ambiguous names and unknown states without treating a diagnostic as an evaluation result.
 5. Open the original file in the editor when a change is needed, or explicitly edit an eligible existing Memory Markdown file in place.
 6. Connect to the local Codex App Server and inspect recent workspace runs.
 7. Replay a selected run as a linear, metadata-only turn/item timeline.
@@ -52,7 +67,7 @@ The saved-history model records configuration evidence, not file backups. It exc
 ## Information architecture
 
 - **Overview**: map, counts, conflicts and recently changed items.
-- **Items**: searchable inventory and inspector.
+- **Items**: searchable inventory, position and purpose summaries, deterministic diagnostics, and inspector.
 - **Runs**: experimental metadata-only Codex thread timeline and observed item types.
 - **Compare**: Saved-to-Saved Harness revision differences in v0.4; bound-run and outcome comparisons only after execution-time capture and verifier evidence exist.
 - **Share**: aggregate-only local preview plus a schema-backed, fresh compatibility report for explicit review and copy in the v0.5 candidate; image and static replay bundles later.
@@ -80,6 +95,7 @@ The v0.4 release implements Overview, Items, the aggregate Share snapshot, a rea
 
 ### Next
 
+- Explainable `AGENTS.md`, Rule, `SKILL.md`, Agent, empty-file, and preview-truncation diagnostics, with provider-backed limits kept distinct from project maintainability heuristics.
 - Adapter-backed execution-time snapshot binding for newly observed runs, building on the v0.4 storage foundation.
 - Defined graph versus actual path, without inferring a graph from a linear trace.
 - Evidence and verifier attachment.
@@ -95,6 +111,17 @@ The current runtime view is explicitly limited: current runtime declarations can
 - A marketplace or public gallery.
 - Automatic prompt/skill optimization.
 - Claiming cross-runtime semantic equivalence.
+
+## Product surfaces
+
+The macOS desktop app remains the complete product surface for inventory, inspection, history, comparison, sharing, and run forensics. A shared scanning and diagnostic core may also power smaller entry points when only a focused answer is needed:
+
+- CLI/Doctor for quick preflight diagnostics; the current repository headless scan is an existing foundation, not a separately shipped Doctor product.
+- Codex plugin for in-context inspection.
+- DeepSeek Harness plugin, gated on compatibility evidence because the [official plugin architecture](https://github.com/deepseek-ai/deepseek-harness) is in developer preview.
+- macOS menu-bar or widget surface for status and scan entry.
+
+These are next-surface candidates. They complement rather than replace the desktop app, and must not be described as available until each has a tested distribution artifact.
 
 ## Propagation loop
 

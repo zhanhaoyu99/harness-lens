@@ -72,6 +72,17 @@ Evidence boundary: v0.4 compares Saved-to-Saved Harness context only. It does no
 
 Exit criterion: a user can explain the exact known context for a newly captured run without relying on mutable current files.
 
+## Unreleased candidate — Deterministic configuration diagnostics
+
+- [x] Diagnose `AGENTS.md` using the documented repository-root-to-working-directory chain and same-directory `AGENTS.override.md` precedence, rather than arbitrary recursive filename matches.
+- [x] Diagnose skills only within supported Codex, Claude Code, and shared skill roots containing a `SKILL.md` manifest; keep discovery separate from runtime loading or invocation.
+- [x] Report Codex's provider-documented 32 KiB default combined project-instruction limit with a link to the [Codex documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md); flag one repository or nested-project instruction file at or above 32 KiB because it alone reaches that combined budget, not as a generic per-file rule.
+- [x] Apply the Harness Lens maintainability heuristic only when Instructions, Rules, Skills, or Agents are strictly over 200 lines; exclude Config, Hooks, Workflows, and Memory, and never present the heuristic as a provider limit.
+- [x] Diagnose missing Skill descriptions, empty non-Memory files, and truncated previews as observable scanner facts.
+- [x] Keep every diagnostic deterministic and inspectable; do not present it as AI review, a health score, a success predictor, or active-use proof.
+
+Exit criterion: every diagnostic identifies its observed inputs, search scope, authority, and evidence boundary without making a runtime or outcome claim.
+
 ## M3 — Verifier-driven evaluation
 
 - Attach tests, simulator/device state, or other verifier evidence to a run.
@@ -96,6 +107,17 @@ Exit criterion: an evaluation result links to independent, inspectable evidence 
 - Provider fixture suite and compatibility matrix.
 - Documented extension contract for new runtime adapters.
 - Real issue-to-fix-to-release maintenance loops and public release notes.
+
+### Lightweight surfaces on the shared core
+
+The full desktop app remains the complete investigation surface. The following smaller distributions are complementary roadmap work, not replacements and not current v0.4 capabilities:
+
+- [ ] Package a focused CLI/Doctor experience on top of the existing source-level headless scan.
+- [ ] Provide a Codex plugin for in-context configuration diagnostics.
+- [ ] Prototype a DeepSeek Harness plugin behind explicit compatibility checks; the [official DeepSeek Harness plugin architecture](https://github.com/deepseek-ai/deepseek-harness) remains in developer preview and may change incompatibly.
+- [ ] Explore a macOS menu-bar or widget surface for quick status and scan entry.
+
+Each surface needs a tested artifact, an explicit privacy boundary, and parity tests for the shared diagnostics before it can be called available.
 
 ## Explicit non-goals for the current roadmap
 

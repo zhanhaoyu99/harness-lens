@@ -129,16 +129,35 @@ describe("SnapshotCompare", () => {
 
     expect(screen.getByRole("button", { name: "Clear history" })).toBeEnabled();
   });
+
+  it("does not attribute cross-scanner diagnostic differences to configuration changes", () => {
+    const base = structuredClone(sampleStoredContextSnapshots[1]);
+    const target = structuredClone(base);
+    base.summary.scannerVersion = "1";
+    target.summary.scannerVersion = "2";
+    target.diagnostics.push({
+      id: "quality:new-rule",
+      severity: "info",
+      artifactIds: [target.items[0].id],
+    });
+
+    renderCompare({ comparison: compareStoredSnapshots(base, target) });
+
+    expect(screen.getByText(/Scanner changed from 1 to 2/)).toBeInTheDocument();
+    expect(screen.getByText(/attribution is unknown/)).toBeInTheDocument();
+    expect(screen.getByText("Distinct changed items").previousSibling).toHaveTextContent("0");
+  });
 });
 
 function renderCompare(overrides: Partial<{
+  comparison: ReturnType<typeof compareStoredSnapshots>;
   onCapture: () => void;
   onInspect: (captureId: string) => void;
   onCompare: () => void;
   onSwap: () => void;
   onClear: () => void;
 }> = {}) {
-  const comparison = compareStoredSnapshots(
+  const comparison = overrides.comparison ?? compareStoredSnapshots(
     sampleStoredContextSnapshots[1],
     sampleStoredContextSnapshots[0],
   );

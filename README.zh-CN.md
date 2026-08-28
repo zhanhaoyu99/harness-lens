@@ -4,14 +4,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![macOS arm64](https://img.shields.io/badge/macOS-arm64-111827?logo=apple)](#安装)
 
-**查看项目中有哪些 Codex 与 Claude 上下文、当前适配器能解析哪些内容、发生了什么变化，以及一次运行暴露了什么。**
+**在本地检查 Codex 与 Claude Code 配置，并通过可追溯到文件和 Provider 规则的确定性 Agent Harness 诊断发现问题。**
 
-Harness Lens 是一个面向 macOS 的本地优先 Agent Harness 检查器、Codex 运行记录器和配置快照对比工具。它能把分散的编码 Agent 上下文变成可检查证据，而无需把仓库或原始运行内容上传到 Harness Lens 服务。
+Harness Lens 是一个面向 macOS 的本地优先 Codex 与 Claude Code 配置检查器。完整桌面体验把确定性 Agent Harness 诊断、Codex 运行记录和配置快照对比组合在一起，无需把仓库或原始运行内容上传到 Harness Lens 服务。
 
-Harness Lens 想先回答两个看似简单、实际很难的问题：
+Harness Lens 想先回答三个看似简单、实际很难的问题：
 
-1. 当前工作区会受到哪些 Rules、Skills、Hooks、Agents、配置与 Memory 影响？
-2. 一次真实的 Codex 任务实际走过了怎样的路径？
+1. 当前工作区会受到哪些 Rules、Skills、Hooks、Agents、配置与 Memory 影响，每一项主要做什么？
+2. 哪些确定性的配置信号值得人工复核？
+3. 一次真实的 Codex 任务实际走过了怎样的路径？
 
 它会扫描本机的 Codex 与 Claude Harness 来源，解释内容的来源和解析状态，并可连接实验性的 Codex App Server，把运行信息呈现成只包含元数据的「飞行记录」。它不会执行 Agent，也不会把扫描内容上传到 Harness Lens 服务。除用户明确确认编辑一个已识别的 Memory Markdown 文件外，Harness 来源保持只读。
 
@@ -74,6 +75,28 @@ Harness Lens 会严格区分四类结论：
 - 不打开桌面窗口也能执行 Headless 文件扫描。
 
 Run Recorder 只保留白名单中的元数据，不展示原始 Prompt、工具参数、模型推理或文件 Diff。
+
+## 未发布候选：确定性配置诊断
+
+下一个候选版本会为每个已发现条目生成简洁的定位与功能说明，并为 `AGENTS.md`、Rules、`SKILL.md`、Agent 定义和其他扫描制品增加可解释检查。有经过脱敏的声明式 Description 时优先使用；否则只根据条目类型生成保守的角色说明，并把 Provider 与作用域单独作为定位展示，不会从任意文件正文猜测业务意图。候选检查包括 Skill 缺少 Description、非 Memory 文件为空、预览被截断，以及可维护性或 Provider 限制提示。这些检查是由文件与解析规则确定的诊断，不是 AI Review、健康评分、成功率预测，也不能证明某项配置在一次运行中实际生效。
+
+每条结果都必须遵循明确的搜索语义：
+
+- 对 Codex 项目指令，Harness Lens 沿仓库根目录到用户所选工作区的目录链搜索；同一目录存在非空 `AGENTS.override.md` 时优先于 `AGENTS.md`，并展示最终选择的指令链。它不会把任意递归搜到的同名文件直接当成有效配置。
+- 对 Skills，Harness Lens 会在已支持的 Codex、Claude Code 与共享 Skill 根目录中，查找包含 `SKILL.md` 的 Skill 子目录。发现 Manifest 只能说明它位于受支持位置，不能证明 Runtime 已加载或调用它。
+
+两类大小提示的权威性不同。严格大于 200 行才触发的警告只是 Harness Lens 为本项目定义的可维护性启发式，仅用于 Instructions、Rules、Skills 与 Agents，不用于 Config、Hooks、Workflows 或 Memory；它不是 Codex 或 Claude Code 的限制。Codex 的 32 KiB 默认上限针对合并后的项目指令链，属于 Provider 文档明确记载的限制；参见 [Codex `AGENTS.md` 搜索与限制](https://learn.chatgpt.com/docs/agent-configuration/agents-md)。候选诊断会在单个 Codex 仓库级或子项目级指令文件达到或超过 32 KiB 时提示，因为该文件自身已经达到合并后的默认预算；不会把 32 KiB 错写成通用的单文件限制。Harness Lens 必须分别标记本项目启发式与 Provider 规则。
+
+## 保留完整桌面端，扩展轻量入口
+
+完整桌面产品继续保留：当用户需要深入排查时，清单、检查、快照、对比、分享与运行取证仍然应该组合使用。后续会让同一诊断内核支持更轻的入口；它们是桌面端的补充，而不是替代品：
+
+- 面向快速预检的 CLI / Doctor（仓库当前已有源码级 Headless Scan，但尚无独立分发的 Doctor）；
+- 在 Codex 上下文中检查配置的 Codex Plugin；
+- DeepSeek Harness Plugin；由于 [DeepSeek Harness 官方插件架构](https://github.com/deepseek-ai/deepseek-harness)仍处于 Developer Preview，需要持续验证兼容性；
+- 用于低摩擦查看状态与发起扫描的 macOS 菜单栏入口或小挂件。
+
+这些 Plugin 与轻量入口属于 Roadmap 候选，不是当前已发布的 v0.4 功能。
 
 ## v0.4.0 版本范围
 

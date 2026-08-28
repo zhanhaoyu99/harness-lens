@@ -343,7 +343,7 @@ export default function App() {
       setSnapshot(result);
       setSelectedArtifactId(null);
       setMapFilter({});
-      await performRuntimeScan(result.workspacePath);
+      void performRuntimeScan(result.workspacePath);
     } catch (scanError) {
       if (operation === scanSequence.current) {
         activeRuntimeWorkspacePath.current = previousWorkspacePath;
@@ -783,8 +783,7 @@ export default function App() {
           result.captured?.captureId,
           previousTargetId,
         );
-        await performRuntimeScan(result.liveSnapshot.workspacePath);
-        if (operation !== snapshotCaptureSequence.current) return;
+        void performRuntimeScan(result.liveSnapshot.workspacePath);
         if (!result.captured) {
           setSnapshotHistoryError(
             result.persistenceError ?? copy.compare.error,
@@ -1292,6 +1291,7 @@ export default function App() {
                 ) : (
                   <HarnessTable
                     artifacts={filteredArtifacts}
+                    warnings={snapshot.warnings}
                     language={language}
                     workspacePath={snapshot.workspacePath}
                     selectedId={selectedArtifactId}
@@ -1308,6 +1308,7 @@ export default function App() {
         <Inspector
           artifact={selectedArtifact}
           counterpart={counterpartArtifact}
+          warnings={snapshot?.warnings ?? []}
           language={language}
           workspacePath={snapshot?.workspacePath ?? null}
           groupedArtifacts={groupedArtifacts.length === snapshot?.artifacts.length ? [] : groupedArtifacts}

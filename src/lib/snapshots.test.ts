@@ -36,6 +36,27 @@ describe("context snapshot comparison", () => {
       "removed",
     );
     expect(comparison.unchangedCount).toBe(sampleSnapshot.artifacts.length - 2);
+    expect(comparison.scannerVersionChanged).toBe(false);
+  });
+
+  it("keeps cross-scanner diagnostic differences explicit without attributing item changes", () => {
+    const base = safeStoredSnapshot("base-capture", "base", sampleSnapshot);
+    const target = safeStoredSnapshot("target-capture", "target", sampleSnapshot);
+    base.summary.scannerVersion = "1";
+    target.summary.scannerVersion = "2";
+    target.diagnostics = [
+      ...target.diagnostics,
+      { id: "quality:new-rule", severity: "info", artifactIds: [target.items[0].id] },
+    ];
+
+    const comparison = compareStoredSnapshots(base, target);
+
+    expect(comparison).toMatchObject({
+      changes: [],
+      unchangedCount: sampleSnapshot.artifacts.length,
+      diagnosticsChanged: true,
+      scannerVersionChanged: true,
+    });
   });
 
   it("marks a comparison incomplete when either saved scan was incomplete", () => {

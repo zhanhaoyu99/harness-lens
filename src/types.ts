@@ -33,6 +33,7 @@ export interface HarnessArtifact {
   contentHash: string;
   modifiedAt: string | null;
   sizeBytes: number;
+  lineCount: number;
   resolution: ResolutionState;
   resolutionReason: string;
   duplicateGroupId: string | null;
@@ -188,6 +189,7 @@ export interface ContextSnapshotComparison {
   changes: SnapshotArtifactChange[];
   unchangedCount: number;
   diagnosticsChanged: boolean;
+  scannerVersionChanged: boolean;
   complete: boolean;
 }
 

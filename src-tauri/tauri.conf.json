@@ -37,8 +37,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "shortDescription": "Local-first Agent Harness DevTools",
-    "longDescription": "Inspect Agent Harness definitions, Memory, and read-only Codex runtime metadata locally.",
+    "shortDescription": "Codex and Claude Code config inspector",
+    "longDescription": "Inspect Codex and Claude Code configuration locally with deterministic Agent Harness diagnostics, snapshots, comparison, and read-only Codex runtime metadata.",
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": "-"

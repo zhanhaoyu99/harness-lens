@@ -16,12 +16,17 @@ function artifact(
   > &
     Partial<HarnessArtifact>,
 ): HarnessArtifact {
+  const content = partial.content ?? null;
+  const lineCount = content
+    ? (content.match(/\n/g)?.length ?? 0) + (content.endsWith("\n") ? 0 : 1)
+    : 0;
   return {
     relativePath: partial.path.replace(workspace, "."),
     content: null,
     contentHash: partial.id.padEnd(64, "0"),
     modifiedAt: "2026-08-11T06:30:00Z",
     sizeBytes: 2048,
+    lineCount,
     resolutionReason: "Discovered in the selected workspace.",
     duplicateGroupId: null,
     counterpartId: null,
@@ -60,6 +65,7 @@ export const sampleSnapshot: HarnessSnapshot = {
       path: `${workspace}/AGENTS.md`,
       resolution: "effective",
       content: "# Project guidance\n\n- Run focused tests after implementation.\n- Keep provider adapters isolated.",
+      lineCount: 236,
       resolutionReason: "Included after global instructions; project guidance has closer scope.",
     }),
     artifact({
@@ -149,6 +155,13 @@ export const sampleSnapshot: HarnessSnapshot = {
     }),
   ],
   warnings: [
+    {
+      id: "quality:guidance-line-review",
+      severity: "info",
+      title: "Long guidance files may need review",
+      detail: "The 200-line threshold is a Harness Lens maintainability heuristic, not a performance or success-rate conclusion.",
+      artifactIds: ["rule-repo"],
+    },
     {
       id: "cross-provider-difference:repo:agent:qa",
       severity: "info",

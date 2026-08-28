@@ -125,6 +125,30 @@ afterEach(() => {
 });
 
 describe("runtime scan workspace isolation", () => {
+  it("finishes a static workspace scan while runtime inspection is still pending", async () => {
+    const workspaceA = workspace("workspace-a");
+    const pendingRuntime = deferred<CodexRuntimeSnapshot>();
+    tauri.chooseWorkspace.mockResolvedValueOnce(workspaceA);
+    tauri.inspectRuntime.mockReturnValueOnce(pendingRuntime.promise);
+    render(<App />);
+
+    await waitFor(() => expect(tauri.loadDefaultWorkspace).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Choose workspace" }));
+
+    await screen.findByText(workspaceA.workspaceName);
+    expect(screen.getByRole("button", { name: "Rescan" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Open workspace" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Runs" }));
+    expect(screen.getByRole("button", { name: "Refresh runtime" })).toBeDisabled();
+
+    await act(async () => {
+      pendingRuntime.resolve(runtime("initial-a"));
+      await pendingRuntime.promise;
+    });
+    await screen.findByText("initial-a run");
+    expect(screen.getByRole("button", { name: "Refresh runtime" })).toBeEnabled();
+  });
+
   it("keeps an unsaved Memory draft when navigating to and from Share", async () => {
     const workspaceA = workspace("workspace-a");
     tauri.chooseWorkspace.mockResolvedValueOnce(workspaceA);
@@ -261,5 +285,44 @@ describe("runtime scan workspace isolation", () => {
     await screen.findByText("capture-current run");
     expect(screen.getByRole("button", { name: "Refresh runtime" })).toBeEnabled();
     expect(screen.queryByText("stale runtime failure")).not.toBeInTheDocument();
+  });
+
+  it("finishes Capture persistence while its runtime refresh is still pending", async () => {
+    const workspaceA = workspace("workspace-a");
+    const capturedWorkspace = {
+      ...workspaceA,
+      scannedAt: "2026-08-13T05:00:00Z",
+    };
+    const pendingRuntime = deferred<CodexRuntimeSnapshot>();
+    const summary = captureSummary(capturedWorkspace);
+
+    await openInitialWorkspace(workspaceA, runtime("initial-a"));
+    tauri.captureContextSnapshot.mockResolvedValueOnce({
+      liveSnapshot: capturedWorkspace,
+      captured: summary,
+      history: [summary],
+      persistenceError: null,
+      storageStatus: {
+        cleanupPending: false,
+        cleanupWarning: null,
+        durabilityWarning: null,
+      },
+    });
+    tauri.inspectRuntime.mockReturnValueOnce(pendingRuntime.promise);
+
+    fireEvent.click(screen.getByRole("button", { name: "Compare" }));
+    fireEvent.click(screen.getByRole("button", { name: "Capture snapshot" }));
+
+    await screen.findByText("Fresh scan captured and saved locally.");
+    expect(screen.getByRole("button", { name: "Capture snapshot" })).toBeEnabled();
+    expect(screen.getByText(/1 saved capture/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Runs" }));
+    expect(screen.getByRole("button", { name: "Refresh runtime" })).toBeDisabled();
+
+    await act(async () => {
+      pendingRuntime.resolve(runtime("capture-current"));
+      await pendingRuntime.promise;
+    });
+    await screen.findByText("capture-current run");
   });
 });

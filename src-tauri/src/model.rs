@@ -57,6 +57,7 @@ pub struct HarnessArtifact {
     pub content_hash: String,
     pub modified_at: Option<String>,
     pub size_bytes: u64,
+    pub line_count: u64,
     pub resolution: ResolutionState,
     pub resolution_reason: String,
     pub duplicate_group_id: Option<String>,
