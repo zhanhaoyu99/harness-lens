@@ -39,24 +39,24 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
-    "@xyflow/react": "^12.11.2",
+    "@xyflow/react": "^12.11.5",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.31.0",
+    "lucide-react": "^1.37.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
     "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.3.2",
-    "@types/node": "^26.2.0",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
     "esbuild": "^0.28.2",
     "jsdom": "^30.0.1",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1",
-    "vitest": "^4.1.10"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   }
 }
